@@ -19,6 +19,7 @@ from url_risk_signals import (
 
 app = FastAPI()
 
+# Initialize DB
 init_db()
 
 app.add_middleware(
@@ -31,6 +32,11 @@ app.add_middleware(
 
 class EmailInput(BaseModel):
     content: str
+
+
+# ========================
+# Utility Functions
+# ========================
 
 def detect_urls(text):
     return re.findall(r'https?://[^\s]+', text)
@@ -91,16 +97,23 @@ def is_ip_url(url):
     except:
         return False
 
+
+# ========================
+# Routes
+# ========================
+
 @app.get("/")
 def home():
     return {"status": "Phishing Forensics API running"}
 
-@app.get("/history")
-def get_history():
-    rows = get_recent_scans()
-    history = []
 
-    for row in rows:
+# 🔥 NEW HISTORY ENDPOINT (YOUR VERSION)
+@app.get("/history")
+async def get_history():
+    scans = get_recent_scans(limit=10)
+
+    history = []
+    for row in scans:
         history.append({
             "id": row[0],
             "timestamp": row[1],
@@ -111,6 +124,7 @@ def get_history():
         })
 
     return {"history": history}
+
 
 @app.post("/analyze")
 def analyze_email(data: EmailInput):
@@ -178,9 +192,9 @@ def analyze_email(data: EmailInput):
         if subdomain_flag: reasons.append("excessive subdomains detected")
         if tld_flag: reasons.append("uses suspicious top-level domain")
         if hyphen_flag: reasons.append("domain contains many hyphens")
-        if entropy_flag: reasons.append(f"domain shows high randomness (entropy={round(entropy_value,2)})")
+        if entropy_flag: reasons.append(f"high randomness (entropy={round(entropy_value,2)})")
         if long_flag and risk > 0: reasons.append("unusually long URL")
-        if external and risk > 20: reasons.append("points to external domain")
+        if external and risk > 20: reasons.append("external domain")
 
         explanation = (
             "This URL " + " and ".join(reasons) + "."
@@ -208,13 +222,18 @@ def analyze_email(data: EmailInput):
     email_risk = min(email_risk, 100)
 
     risk_level = "low"
-    if email_risk >= 70: risk_level = "high"
-    elif email_risk >= 30: risk_level = "medium"
+    if email_risk >= 70:
+        risk_level = "high"
+    elif email_risk >= 30:
+        risk_level = "medium"
 
     risk_color = "green"
-    if risk_level == "high": risk_color = "red"
-    elif risk_level == "medium": risk_color = "yellow"
+    if risk_level == "high":
+        risk_color = "red"
+    elif risk_level == "medium":
+        risk_color = "yellow"
 
+    # Save to DB
     save_scan(sender, return_path, risk_level, email_risk)
 
     return {
