@@ -8,7 +8,49 @@ function App() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    localStorage.getItem("phish_auth") === "true"
+  );
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
   const API = "http://10.115.31.83:8000";
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    
+    try {
+      const res = await fetch(`${API}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setIsLoggedIn(true);
+        localStorage.setItem("phish_auth", "true");
+      } else {
+        setLoginError(data.message || "Invalid credentials");
+      }
+    } catch (err) {
+      setLoginError("Failed to connect to server");
+    }
+    setLoginLoading(false);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem("phish_auth");
+    setResult(null);
+    setInput("");
+    setUsername("");
+    setPassword("");
+  };
 
   const analyze = async () => {
     if (!input.trim()) return;
@@ -36,6 +78,7 @@ function App() {
   };
 
   const fetchHistory = async () => {
+    if (!isLoggedIn) return;
     try {
       const res = await fetch(`${API}/history`);
       const data = await res.json();
@@ -46,8 +89,10 @@ function App() {
   };
 
   useEffect(() => {
-    fetchHistory();
-  }, []);
+    if (isLoggedIn) {
+      fetchHistory();
+    }
+  }, [isLoggedIn]);
 
   const generatePDF = () => {
     if (!result) return;
@@ -218,19 +263,83 @@ function App() {
     doc.save(`Forensics_Report_${new Date().getTime()}.pdf`);
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="app-wrapper">
+        <div className="ambient-glow glow-1"></div>
+        <div className="ambient-glow glow-2"></div>
+        
+        <div className="login-container animate-fade-in">
+          <div className="glass-card login-card">
+            <div className="logo-container" style={{ marginBottom: "24px" }}>
+              <div className="logo-icon">🛡️</div>
+              <h1 className="title" style={{ fontSize: "28px" }}>
+                Phish<span className="highlight">Forensics</span>
+              </h1>
+            </div>
+            <p className="login-subtitle">System Access Required</p>
+            
+            <form onSubmit={handleLogin} className="login-form">
+              {loginError && <div className="error-message">{loginError}</div>}
+              
+              <div className="form-group">
+                <label>Username</label>
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter username"
+                  className="login-input"
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Password</label>
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                  className="login-input"
+                  required
+                />
+              </div>
+              
+              <button 
+                type="submit" 
+                className={`primary-btn ${loginLoading ? 'loading' : ''}`}
+                disabled={loginLoading}
+                style={{ marginTop: "12px" }}
+              >
+                {loginLoading ? <span className="spinner"></span> : "Authenticate"}
+              </button>
+            </form>
+            <div className="login-hint">Demo Access: admin / admin123</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-wrapper">
       {/* Background ambient effects */}
       <div className="ambient-glow glow-1"></div>
       <div className="ambient-glow glow-2"></div>
 
-      <div className="container">
+      <div className="container animate-fade-in">
         <header className="header">
-          <div className="logo-container">
-            <div className="logo-icon">🛡️</div>
-            <h1 className="title">
-              Phish<span className="highlight">Forensics</span>
-            </h1>
+          <div className="header-top">
+            <div className="logo-container">
+              <div className="logo-icon">🛡️</div>
+              <h1 className="title">
+                Phish<span className="highlight">Forensics</span>
+              </h1>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">
+              Logout
+            </button>
           </div>
           <p className="subtitle">Advanced Threat Intelligence Sandbox</p>
         </header>

@@ -41,6 +41,11 @@ class EmailInput(BaseModel):
     content: str
 
 
+class LoginInput(BaseModel):
+    username: str
+    password: str
+
+
 # ========================
 # Utility Functions
 # ========================
@@ -76,7 +81,7 @@ def is_shortened(url):
 def check_suspicious_domain(url):
     domain = get_base_domain(url)
     full = url.lower()
-    keywords = ["login", "verify", "secure", "account", "bank"]
+    keywords = ["login", "secure", "bank", "update", "verify", "account", "support", "auth"]
     domain_hits = sum(1 for k in keywords if k in domain)
     path_hits = sum(1 for k in keywords if k in full)
     return (domain_hits + path_hits) >= 2
@@ -126,6 +131,13 @@ def is_ip_url(url):
 @app.get("/")
 def home():
     return {"status": "PhishForensics API running"}
+
+
+@app.post("/login")
+def login(data: LoginInput):
+    if data.username == "admin" and data.password == "admin123":
+        return {"success": True, "message": "Login successful"}
+    return {"success": False, "message": "Invalid credentials"}
 
 
 @app.get("/history")
