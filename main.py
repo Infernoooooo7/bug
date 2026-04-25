@@ -7,6 +7,13 @@ import tldextract
 import difflib
 import ipaddress
 
+from url_risk_signal import (
+    suspicious_tld,
+    many_hyphens,
+    is_long_url,
+    has_many_subdomains
+)
+
 app = FastAPI()
 
 app.add_middleware(
@@ -78,21 +85,6 @@ def is_ip_url(url):
         return True
     except:
         return False
-
-def has_many_subdomains(url):
-    host = url.split("//")[-1].split("/")[0]
-    return host.count('.') > 3
-
-def is_long_url(url):
-    return len(url) > 75
-
-def suspicious_tld(url):
-    ext = tldextract.extract(url)
-    return ext.suffix in ["xyz", "top", "work"]
-
-def many_hyphens(url):
-    domain = get_base_domain(url)
-    return domain.count('-') >= 3
 
 @app.get("/")
 def home():

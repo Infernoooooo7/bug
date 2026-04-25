@@ -378,7 +378,7 @@
   --border: rgba(255, 255, 255, 0.1);
   --text: #e2e8f0;
   --muted: #94a3b8;
-  --accent: #39ff14; /* NMAMIT Neon Green */
+  --accent: #39ff14; /* Neon Green */
   --danger: #f43f5e;
   --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   --mono: 'JetBrains Mono', monospace;
@@ -404,7 +404,7 @@
   margin-bottom: 20px;
 }
 
-/* NMAMIT LAB BRANDING */
+/* LAB BRANDING */
 .branding-title {
   color: var(--accent);
   margin: 0;

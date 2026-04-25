@@ -1,67 +1,58 @@
-import { useState, useRef } from 'react';
-import html2pdf from 'html2pdf.js';
+import { useState } from 'react';
+import { generateForensicPDF } from './utils/generateForensicPDF';
 import './App.css';
 
 export default function App() {
-  // CONFIGURATION: Replace '127.0.0.1' with your friend's laptop IP (e.g., '192.168.1.5')
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.115.31.83:8000/docs';
+  // CONFIGURATION: Replace with your backend API endpoint
+  const API_URL = "http://10.115.31.83:8000/analyze";
   
   const [emailText, setEmailText] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
-  const reportRef = useRef();
+  const [scanData, setScanData] = useState(null);
 
   const handleScan = async () => {
     if (!emailText) return;
     setIsScanning(true);
     setResults(null);
+    setScanData(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/analyze`, {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: emailText })
       });
       const data = await response.json();
+      setScanData(data);
 
       setResults({
         score: data.email_risk_percent,
         level: data.risk_level,
         color: data.risk_color,
         analysis: data.email_analysis,
-        allUrls: [...data.risky_urls, ...data.safe_urls]
+        allUrls: [...data.risky_urls, ...data.safe_urls],
+        caseId: Math.random().toString(36).toUpperCase().substring(2, 10),
+        timestamp: new Date().toLocaleString()
       });
     } catch (error) {
       console.error("Backend Connection Failed:", error);
-      alert(`Error: Ensure the server at ${BACKEND_URL} is running and CORS is enabled.`);
+      alert(`Error: Ensure the server at ${API_URL} is running and CORS is enabled.`);
     } finally {
       setIsScanning(false);
     }
   };
 
-  const downloadPDF = () => {
-    const element = reportRef.current;
-    const opt = {
-      margin: 0.3,
-      filename: `NMAMIT_Forensic_Report_${Date.now()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        backgroundColor: '#050505', 
-        scrollY: 0, // CRITICAL: Fixes cut-off issues
-        windowWidth: element.scrollWidth // Ensures full width is captured
-      },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
+  const handleExportPDF = () => {
+    if (!scanData) return;
+    generateForensicPDF(scanData, emailText);
   };
 
   return (
     <div className="container">
       <header style={{ marginBottom: '40px' }}>
         <h1 style={{ fontSize: '2.5rem', margin: 0 }}>Phish<span style={{ color: '#39ff14' }}>Forensics</span> Sandbox</h1>
-        <p style={{ color: '#94a3b8' }}>NMAMIT Forensic Terminal v1.0.4</p>
+        <p style={{ color: '#94a3b8' }}>Forensic Terminal v1.0.4</p>
       </header>
 
       <div className="glass-card">
@@ -81,13 +72,13 @@ export default function App() {
       {isScanning && <div className="loading">[SYSTEM] Unmasking URLs... running similarity checks...</div>}
 
       {results && !isScanning && (
-        <div ref={reportRef} style={{ padding: '25px', background: '#050505', borderRadius: '12px' }}>
+        <div style={{ padding: '25px', background: '#050505', borderRadius: '12px' }}>
           {/* BRANDED HEADER */}
           <div className="forensic-header">
-            <h2 className="branding-title">NMAMIT Phishing Forensics Lab</h2>
+            <h2 className="branding-title">PhishForensics Sandbox</h2>
             <div className="metadata-row">
-              <span>CASE_ID: {Math.random().toString(36).toUpperCase().substring(2, 10)}</span>
-              <span>TIMESTAMP: {new Date().toLocaleString()}</span>
+              <span>CASE_ID: {results.caseId}</span>
+              <span>TIMESTAMP: {results.timestamp}</span>
               <span style={{ color: results.color, fontWeight: 'bold' }}>STATUS: {results.level.toUpperCase()} RISK</span>
             </div>
           </div>
@@ -130,7 +121,7 @@ export default function App() {
                   </div>
                 </div>
               ))}
-              <button className="btn-export" onClick={downloadPDF} style={{ marginTop: '25px', background: 'transparent', color: '#39ff14', border: '1px solid #39ff14', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.3s' }}>
+              <button className="btn-export" onClick={handleExportPDF} style={{ marginTop: '25px', background: 'transparent', color: '#39ff14', border: '1px solid #39ff14', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.3s' }}>
                 EXPORT FORENSIC PDF REPORT
               </button>
             </div>
