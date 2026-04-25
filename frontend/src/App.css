@@ -371,3 +371,87 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+:root {
+  --bg-0: #050505; /* Deep Obsidian */
+  --surface: rgba(255, 255, 255, 0.03);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #39ff14; /* NMAMIT Neon Green */
+  --danger: #f43f5e;
+  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+  --mono: 'JetBrains Mono', monospace;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  background-color: var(--bg-0);
+  min-height: 100vh;
+}
+
+/* THE FROSTED GLASS CARD YOU WANTED */
+.glass-card {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+/* NMAMIT LAB BRANDING */
+.branding-title {
+  color: var(--accent);
+  margin: 0;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+}
+
+/* CRITICAL: Fix for "RYSPORTER PAIN" bug */
+.insight-label {
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-family: Arial, Helvetica, sans-serif; /* Standard font for PDF stability */
+  letter-spacing: 0.5px;
+}
+
+.highlight {
+  color: var(--accent);
+  text-shadow: 0 0 16px rgba(57, 255, 20, 0.4);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 200px;
+  background-color: #000;
+  border: 1px dashed rgba(57, 255, 20, 0.3);
+  border-radius: 12px;
+  color: var(--accent);
+  padding: 16px;
+  font-family: var(--mono);
+  outline: none;
+}
+
+/* Results Risk Bars */
+.risk-bar-container {
+  width: 180px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.risk-bar-fill {
+  height: 100%;
+  transition: width 0.8s ease-in-out;
+}
