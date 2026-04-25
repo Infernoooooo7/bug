@@ -119,16 +119,4 @@ npm run dev
 │   │   └── index.css       # Premium UI Styling
 │   └── package.json        # Frontend Dependencies
 └── .env                    # Sensitive Configurations
-```
-
-## 🌟 Future Improvements
-*   **AI-Powered Detection**: Implement a Random Forest model trained on PhishTank datasets.
-*   **Screenshot Preview**: Capture a safe image of the destination site using a headless browser.
-*   **Browser Extension**: Real-time analysis of links as users browse.
-*   **Deep Email Parsing**: Uploading `.eml` files for full header analysis.
-
-## 🤝 Contribution
-Contributions are welcome! Please fork the repository, create a feature branch, and submit a PR. For major changes, please open an issue first to discuss what you would like to change.
-
-
 ---
