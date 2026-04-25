@@ -1,20 +1,18 @@
 import os
-from dotenv import load_dotenv
-from entropy_analysis import is_high_entropy_domain
-
-load_dotenv()
-from db import init_db, save_scan, get_recent_scans
-from threat_api import check_url_virustotal
-
-from fastapi import FastAPI
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
 import re
 import requests
 import tldextract
 import difflib
 import ipaddress
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
+# Project Imports
+from entropy_analysis import is_high_entropy_domain
+from threat_api import check_url_virustotal
+from db import init_db, log_scan, get_recent_history
 from url_risk_signals import (
     suspicious_tld,
     many_hyphens,
@@ -22,10 +20,14 @@ from url_risk_signals import (
     has_many_subdomains
 )
 
+# Initialize App and Load Environment
+load_dotenv()
 app = FastAPI()
 
+# Initialize SQLite Database
 init_db()
 
+# Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,7 +38,6 @@ app.add_middleware(
 
 class EmailInput(BaseModel):
     content: str
-
 
 # ========================
 # Utility Functions
@@ -82,7 +83,7 @@ def expand_url(url):
 def extract_email_headers(text):
     from_match = re.search(r'From:\s*(.*)', text)
     return_match = re.search(r'Return-Path:\s*(.*)', text)
-    sender = from_match.group(1).strip() if from_match else None
+    sender = from_match.group(1).strip() if from_match else "Unknown"
     return_path = return_match.group(1).strip() if return_match else None
     return sender, return_path
 
@@ -101,7 +102,6 @@ def is_ip_url(url):
     except:
         return False
 
-
 # ========================
 # Routes
 # ========================
@@ -110,37 +110,23 @@ def is_ip_url(url):
 def home():
     return {"status": "Phishing Forensics API running"}
 
-
 @app.get("/history")
-async def get_history():
-    scans = get_recent_scans(limit=10)
-
-    history = []
-    for row in scans:
-        history.append({
-            "id": row[0],
-            "timestamp": row[1],
-            "sender": row[2],
-            "return_path": row[3],
-            "risk_level": row[4],
-            "risk_percent": row[5]
-        })
-
-    return {"history": history}
-
+async def get_history_endpoint():
+    try:
+        history = get_recent_history(limit=10)
+        return {"history": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.post("/analyze")
 def analyze_email(data: EmailInput):
     urls = detect_urls(data.content)
-
     sender, return_path = extract_email_headers(data.content)
     sender_domain = extract_domain(sender)
-
     spoofed = check_sender_spoof(sender, return_path)
 
     risky_urls = []
     safe_urls = []
-
     total_risk = 0
 
     for url in urls:
@@ -150,27 +136,24 @@ def analyze_email(data: EmailInput):
         unicode_homograph = detect_unicode_homograph(expanded)
         shortened = is_shortened(url)
         suspicious = check_suspicious_domain(expanded)
-
         ip_flag = is_ip_url(expanded)
         subdomain_flag = has_many_subdomains(expanded)
         long_flag = is_long_url(expanded)
         tld_flag = suspicious_tld(expanded)
         hyphen_flag = many_hyphens(expanded)
-
         entropy_flag, entropy_value = is_high_entropy_domain(base)
 
         visual_homograph = False
         similarity_score = 0
-
         if sender_domain:
             similarity_score = similarity(base, sender_domain)
             if base != sender_domain and similarity_score > 0.85:
                 visual_homograph = True
 
         external = sender_domain not in base if sender_domain else False
-
         risk = 0
 
+        # Risk Calculation
         if unicode_homograph: risk += 40
         if visual_homograph: risk += 50
         if shortened: risk += 15
@@ -183,16 +166,14 @@ def analyze_email(data: EmailInput):
         if long_flag and risk > 0: risk += 10
         if risk > 0 and external: risk += 5
 
-        # 🔥 VirusTotal (only if already suspicious)
+        # VirusTotal Integration
         if risk > 20:
             vt_flag, vt_reason = check_url_virustotal(expanded)
             if vt_flag:
                 risk += 40
 
         risk = min(risk, 100)
-
         reasons = []
-
         if visual_homograph: reasons.append("domain closely mimics sender domain")
         if unicode_homograph: reasons.append("uses Unicode characters")
         if shortened: reasons.append("shortened URL hides destination")
@@ -204,9 +185,7 @@ def analyze_email(data: EmailInput):
         if entropy_flag: reasons.append(f"high randomness (entropy={round(entropy_value,2)})")
         if long_flag and risk > 0: reasons.append("unusually long URL")
         if external and risk > 20: reasons.append("external domain")
-
-        if risk > 60:
-            reasons.append("flagged by real-world threat intelligence (VirusTotal)")
+        if risk > 60: reasons.append("flagged by real-world threat intelligence (VirusTotal)")
 
         explanation = (
             "This URL " + " and ".join(reasons) + "."
@@ -220,32 +199,25 @@ def analyze_email(data: EmailInput):
             "entropy_score": round(entropy_value, 2),
             "explanation": explanation
         }
-
         total_risk += risk
-
         if risk > 0:
             risky_urls.append(obj)
         else:
             safe_urls.append(obj)
 
     avg_risk = int(total_risk / len(urls)) if urls else 0
-
-    email_risk = avg_risk + (25 if spoofed else 0)
-    email_risk = min(email_risk, 100)
+    email_risk = min(avg_risk + (25 if spoofed else 0), 100)
 
     risk_level = "low"
-    if email_risk >= 70:
-        risk_level = "high"
-    elif email_risk >= 30:
-        risk_level = "medium"
+    if email_risk >= 70: risk_level = "high"
+    elif email_risk >= 30: risk_level = "medium"
 
     risk_color = "green"
-    if risk_level == "high":
-        risk_color = "red"
-    elif risk_level == "medium":
-        risk_color = "yellow"
+    if risk_level == "high": risk_color = "red"
+    elif risk_level == "medium": risk_color = "yellow"
 
-    save_scan(sender, return_path, risk_level, email_risk)
+    # Log scan to SQLite database
+    log_scan(sender, risk_level, email_risk)
 
     return {
         "total_urls": len(urls),
