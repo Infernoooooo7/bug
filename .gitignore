@@ -7,3 +7,4 @@ __pycache__/
 .env
 threat_api.py
 *.db
+DEV_README.md
