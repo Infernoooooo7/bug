@@ -123,64 +123,67 @@ export default function App() {
             {/* LINK DISTRIBUTION HEAT-MAP */}
             <div className="glass-card" style={{ marginTop: '20px' }}>
               <h3 style={{ color: '#e2e8f0', marginBottom: '20px' }}>Vector Risk Distribution</h3>
-              <h4 style={{ color: '#f43f5e', marginBottom: '10px' }}>Risky URLs</h4>
-              <div className="link-card-grid">
-                {results.riskyUrls.map((item, index) => (
-                  <div key={index} className="individual-link-card">
-                    <div className="link-info">
-                      <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {item.original_url}
-                      </span>
-                      <div style={{ color: item.risk_percent > 0 ? '#f43f5e' : '#39ff14', fontSize: '0.7rem', marginTop: '4px' }}>
-                        {item.explanation}
+              <div className="risky-section">
+                <h4 style={{ color: '#f43f5e', marginBottom: '10px' }}>Risky URLs</h4>
+                <div className="link-card-grid">
+                  {results.riskyUrls.map((item, index) => (
+                    <div key={index} className="individual-link-card">
+                      <div className="link-info">
+                        <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                          {item.original_url}
+                        </span>
+                        <div style={{ color: item.risk_percent > 0 ? '#f43f5e' : '#39ff14', fontSize: '0.7rem', marginTop: '4px' }}>
+                          {item.explanation}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div className="risk-bar-container">
+                          <div className="risk-bar-fill" style={{ 
+                            width: `${item.risk_percent}%`, 
+                            backgroundColor: item.risk_percent > 70 ? '#f43f5e' : item.risk_percent > 30 ? '#f59e0b' : '#39ff14' 
+                          }}></div>
+                        </div>
+                        <span className="percentage-text" style={{ color: item.risk_percent > 30 ? '#f59e0b' : '#39ff14' }}>
+                          {item.risk_percent}%
+                        </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div className="risk-bar-container">
-                        <div className="risk-bar-fill" style={{ 
-                          width: `${item.risk_percent}%`, 
-                          backgroundColor: item.risk_percent > 70 ? '#f43f5e' : item.risk_percent > 30 ? '#f59e0b' : '#39ff14' 
-                        }}></div>
-                      </div>
-                      <span className="percentage-text" style={{ color: item.risk_percent > 30 ? '#f59e0b' : '#39ff14' }}>
-                        {item.risk_percent}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {results.riskyUrls.length === 0 && (
-                  <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No risky URLs detected.</div>
-                )}
+                  ))}
+                  {results.riskyUrls.length === 0 && (
+                    <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No risky URLs detected.</div>
+                  )}
+                </div>
               </div>
-
-              <h4 style={{ color: '#39ff14', marginTop: '20px', marginBottom: '10px' }}>Safe URLs</h4>
-              <div className="link-card-grid">
-                {results.safeUrls.map((item, index) => (
-                  <div key={`safe-${index}`} className="individual-link-card">
-                    <div className="link-info">
-                      <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {item.original_url}
-                      </span>
-                      <div style={{ color: item.risk_percent > 0 ? '#f43f5e' : '#39ff14', fontSize: '0.7rem', marginTop: '4px' }}>
-                        {item.explanation}
+              <div className="safe-section">
+                <h4 style={{ color: '#39ff14', marginTop: '20px', marginBottom: '10px' }}>Safe URLs</h4>
+                <div className="link-card-grid">
+                  {results.safeUrls.map((item, index) => (
+                    <div key={`safe-${index}`} className="individual-link-card">
+                      <div className="link-info">
+                        <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                          {item.original_url}
+                        </span>
+                        <div style={{ color: item.risk_percent > 0 ? '#f43f5e' : '#39ff14', fontSize: '0.7rem', marginTop: '4px' }}>
+                          {item.explanation}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div className="risk-bar-container">
+                          <div className="risk-bar-fill" style={{
+                            width: `${item.risk_percent}%`,
+                            backgroundColor: item.risk_percent > 70 ? '#f43f5e' : item.risk_percent > 30 ? '#f59e0b' : '#39ff14'
+                          }}></div>
+                        </div>
+                        <span className="percentage-text" style={{ color: item.risk_percent > 30 ? '#f59e0b' : '#39ff14' }}>
+                          {item.risk_percent}%
+                        </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <div className="risk-bar-container">
-                        <div className="risk-bar-fill" style={{
-                          width: `${item.risk_percent}%`,
-                          backgroundColor: item.risk_percent > 70 ? '#f43f5e' : item.risk_percent > 30 ? '#f59e0b' : '#39ff14'
-                        }}></div>
-                      </div>
-                      <span className="percentage-text" style={{ color: item.risk_percent > 30 ? '#f59e0b' : '#39ff14' }}>
-                        {item.risk_percent}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {results.safeUrls.length === 0 && (
-                  <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No safe URLs found.</div>
-                )}
+                  ))}
+                  {results.safeUrls.length === 0 && (
+                    <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No safe URLs found.</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

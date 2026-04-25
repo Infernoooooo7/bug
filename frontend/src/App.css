@@ -30,11 +30,13 @@ body {
 }
 
 .glass-card {
-  background-color: #000000; /* Pure black */
-  border: 1px solid #222222; /* Very faint dark grey border */
-  border-radius: 12px;
-  padding: 24px;
-  /* Removed the box-shadow completely for a flat, seamless look */
+  background: rgba(30, 30, 30, 0.92); /* Slightly lighter, semi-transparent */
+  border: 1.5px solid #23272f;
+  border-radius: 14px;
+  padding: 28px 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.25), 0 1.5px 0 0 #23272f;
+  transition: box-shadow 0.2s;
 }
 
 .textarea {
@@ -74,21 +76,23 @@ body {
 }
 
 .btn-export {
-  background-color: transparent;
-  color: #39ff14;
+  background: linear-gradient(90deg, #39ff14 0%, #10b981 100%);
+  color: #0f172a;
   font-weight: bold;
-  font-size: 0.9rem;
-  padding: 8px 16px;
-  border: 1px solid #39ff14;
-  border-radius: 6px;
+  font-size: 1rem;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   transition: 0.2s;
   display: inline-block;
   margin-top: 10px;
+  box-shadow: 0 2px 8px 0 rgba(57,255,20,0.08);
 }
 
 .btn-export:hover {
-  background-color: rgba(57, 255, 20, 0.1);
+  background: linear-gradient(90deg, #10b981 0%, #39ff14 100%);
+  color: #0f172a;
 }
 
 .link-card-grid {
@@ -142,6 +146,7 @@ body {
   font-weight: bold;
   font-family: monospace;
 }
+
 /* SECURITY INSIGHTS CARD */
 .insight-grid {
   display: grid;
@@ -175,3 +180,19 @@ body {
 .risk-low { color: #39ff14; }
 .risk-medium { color: #f59e0b; }
 .risk-high { color: #f43f5e; }
+
+.risky-section {
+  background: rgba(244, 63, 94, 0.07);
+  border: 1.5px solid #f43f5e;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  padding: 18px 0 8px 0;
+}
+
+.safe-section {
+  background: rgba(57, 255, 20, 0.07);
+  border: 1.5px solid #39ff14;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  padding: 18px 0 8px 0;
+}
