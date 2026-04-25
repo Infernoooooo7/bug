@@ -7,9 +7,11 @@ body {
 }
 
 .container {
-  max-width: 1000px;
-  margin: 0 auto;
+  background-color: #050505; /* Pure dark obsidian */
+  min-height: 100vh;
+  color: #e2e8f0;
   padding: 40px 20px;
+  font-family: 'Inter', sans-serif;
 }
 
 .header {
@@ -30,13 +32,14 @@ body {
 }
 
 .glass-card {
-  background: rgba(30, 30, 30, 0.92); /* Slightly lighter, semi-transparent */
-  border: 1.5px solid #23272f;
-  border-radius: 14px;
-  padding: 28px 24px;
-  margin-bottom: 28px;
-  box-shadow: 0 4px 24px 0 rgba(0,0,0,0.25), 0 1.5px 0 0 #23272f;
-  transition: box-shadow 0.2s;
+  background: rgba(255, 255, 255, 0.03); /* Very subtle white tint */
+  backdrop-filter: blur(12px); /* The frosted glass effect */
+  -webkit-backdrop-filter: blur(12px); /* Support for Safari */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for definition */
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8); /* Depth shadow */
+  margin-bottom: 20px;
 }
 
 .textarea {
