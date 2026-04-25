@@ -1,4 +1,8 @@
+import os
+from dotenv import load_dotenv
 from entropy_analysis import is_high_entropy_domain
+
+load_dotenv()
 from db import init_db, save_scan, get_recent_scans
 from threat_api import check_url_virustotal
 
