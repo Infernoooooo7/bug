@@ -1,0 +1,177 @@
+body {
+  background-color: #000000;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.header {
+  border-bottom: 1px solid #334155;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+}
+
+.title {
+  font-size: 2.5rem;
+  margin: 0;
+  font-weight: bold;
+}
+
+.highlight {
+  color: #39ff14; 
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.5); /* A much tighter, subtle glow */
+}
+
+.glass-card {
+  background-color: #000000; /* Pure black */
+  border: 1px solid #222222; /* Very faint dark grey border */
+  border-radius: 12px;
+  padding: 24px;
+  /* Removed the box-shadow completely for a flat, seamless look */
+}
+
+.textarea {
+  width: 100%;
+  height: 200px;
+  background-color: #000000; /* Pure black */
+  border: 1px dashed #333333; /* Dashed border for a hacker terminal feel */
+  border-radius: 8px;
+  color: #39ff14; 
+  padding: 16px;
+  font-family: monospace;
+  box-sizing: border-box;
+  margin-bottom: 16px;
+  outline: none; /* Removes the default blue glow when clicking inside */
+}
+
+/* Optional: Make the text box border light up green when you click it */
+.textarea:focus {
+  border: 1px solid #39ff14;
+}
+
+.btn-scan {
+  background-color: #10b981;
+  color: #0f172a;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.2s;
+}
+
+.btn-scan:hover {
+  background-color: #34d399;
+}
+
+.btn-export {
+  background-color: transparent;
+  color: #39ff14;
+  font-weight: bold;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border: 1px solid #39ff14;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.btn-export:hover {
+  background-color: rgba(57, 255, 20, 0.1);
+}
+
+.link-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.individual-link-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #222;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.individual-link-card:hover {
+  border-color: #444;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.link-info {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 20px;
+}
+
+.risk-bar-container {
+  width: 150px;
+  height: 8px;
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-right: 15px;
+}
+
+.risk-bar-fill {
+  height: 100%;
+  transition: width 1s ease-out;
+}
+
+.percentage-text {
+  width: 50px;
+  text-align: right;
+  font-weight: bold;
+  font-family: monospace;
+}
+/* SECURITY INSIGHTS CARD */
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+.insight-item {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border: 1px solid #222;
+}
+
+.insight-label {
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.spoof-alert {
+  border-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.05);
+}
+
+/* MATCHING BACKEND COLORS */
+.risk-low { color: #39ff14; }
+.risk-medium { color: #f59e0b; }
+.risk-high { color: #f43f5e; }

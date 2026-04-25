@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "c:\\Users\\Pavan\\phising_backend\\venv\\Scripts\\python.exe",
+    "python.pythonPath": "c:\\Users\\Pavan\\phising_backend\\venv\\Scripts\\python.exe",
+    "python.analysis.extraPaths": [
+        "c:\\Users\\Pavan\\phising_backend\\venv\\Lib\\site-packages"
+    ]
+}
