@@ -5,6 +5,7 @@ import re
 import requests
 import tldextract
 import difflib
+import ipaddress
 
 app = FastAPI()
 
@@ -70,6 +71,29 @@ def check_sender_spoof(sender, return_path):
         return False
     return s != r
 
+def is_ip_url(url):
+    try:
+        host = url.split("//")[-1].split("/")[0]
+        ipaddress.ip_address(host)
+        return True
+    except:
+        return False
+
+def has_many_subdomains(url):
+    host = url.split("//")[-1].split("/")[0]
+    return host.count('.') > 3
+
+def is_long_url(url):
+    return len(url) > 75
+
+def suspicious_tld(url):
+    ext = tldextract.extract(url)
+    return ext.suffix in ["xyz", "top", "work"]
+
+def many_hyphens(url):
+    domain = get_base_domain(url)
+    return domain.count('-') >= 3
+
 @app.get("/")
 def home():
     return {"status": "Phishing Forensics API running"}
@@ -96,12 +120,18 @@ def analyze_email(data: EmailInput):
         shortened = is_shortened(url)
         suspicious = check_suspicious_domain(expanded)
 
+        ip_flag = is_ip_url(expanded)
+        subdomain_flag = has_many_subdomains(expanded)
+        long_flag = is_long_url(expanded)
+        tld_flag = suspicious_tld(expanded)
+        hyphen_flag = many_hyphens(expanded)
+
         visual_homograph = False
         similarity_score = 0
 
         if sender_domain:
             similarity_score = similarity(base, sender_domain)
-            if base != sender_domain and similarity_score > 0.8:
+            if base != sender_domain and similarity_score > 0.85:
                 visual_homograph = True
 
         external = sender_domain not in base if sender_domain else False
@@ -118,7 +148,22 @@ def analyze_email(data: EmailInput):
             risk += 15
 
         if suspicious:
-            risk += 30
+            risk += 45
+
+        if ip_flag:
+            risk += 40
+
+        if subdomain_flag:
+            risk += 20
+
+        if tld_flag:
+            risk += 10
+
+        if hyphen_flag:
+            risk += 10
+
+        if long_flag and risk > 0:
+            risk += 10
 
         if risk > 0 and external:
             risk += 5
@@ -139,7 +184,22 @@ def analyze_email(data: EmailInput):
         if suspicious:
             reasons.append("multiple phishing-related keywords detected")
 
-        if external and risk > 0:
+        if ip_flag:
+            reasons.append("uses raw IP address instead of domain")
+
+        if subdomain_flag:
+            reasons.append("excessive subdomains detected")
+
+        if tld_flag:
+            reasons.append("uses suspicious top-level domain")
+
+        if hyphen_flag:
+            reasons.append("domain contains many hyphens")
+
+        if long_flag and risk > 0:
+            reasons.append("unusually long URL")
+
+        if external and risk > 20:
             reasons.append("points to external domain")
 
         explanation = (

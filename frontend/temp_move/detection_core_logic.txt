@@ -3,6 +3,17 @@ PHISHING DETECTION CORE LOGIC
 
 This file explains the current detection flow implemented in the API.
 
+0) API CORS MIDDLEWARE
+----------------------
+The API enables CORS with:
+
+- allow_origins = ["*"]
+- allow_credentials = True
+- allow_methods = ["*"]
+- allow_headers = ["*"]
+
+This allows frontend apps to call the backend from browser contexts.
+
 1) INPUT MODEL
 --------------
 The API expects a JSON body with one field:
@@ -46,7 +57,7 @@ For each expanded URL, the API computes:
 - external_link:
   True if sender domain is not part of destination base domain
 - suspicious_domain:
-  True if destination base domain contains risky keywords
+  True if expanded URL text contains risky keywords
 
 6) VISUAL HOMOGRAPH CHECK
 -------------------------

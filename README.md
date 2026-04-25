@@ -1,201 +1,141 @@
 # Phising Backend (Phishing Forensics API)
 
-This project is a FastAPI backend that analyzes email/message content for phishing indicators and returns URL-level findings plus an overall email risk score.
+FastAPI backend plus React frontend for phishing forensics. The API analyzes raw email/message content and returns URL-level findings plus an overall email risk score.
 
-## Latest Implementation Status
+## Current Status
 
-The current logic in `main.py` includes:
+The active detection engine in `main.py` now includes:
 
-- CORS middleware enabled for frontend access (`allow_origins=["*"]`, `allow_credentials=True`, all methods/headers)
-- URL extraction from message text (`https?://[^\s]+`)
-- URL expansion by following redirects (`timeout=5`, `allow_redirects=True`)
-- Base-domain extraction for URL comparisons (`domain.suffix`)
+- URL extraction from raw text (`https?://[^\s]+`)
+- Redirect expansion (`timeout=5`, `allow_redirects=True`)
+- Base domain parsing with `tldextract`
+- Sender and return-path parsing (`From`, `Return-Path`)
+- Sender spoof detection (`From` domain mismatch with `Return-Path` domain)
 - Unicode homograph detection
-- Visual homograph detection versus sender domain (similarity threshold `> 0.8`)
-- URL shortener detection
-- External-link detection (sender domain not found in destination base domain)
-- Suspicious keyword detection on expanded URL text (`login`, `verify`, `secure`, `account`, `bank`)
-- Weighted per-URL risk scoring with conditional weak-signal boost (0 to 100)
-- Email header parsing (`From:` and `Return-Path:`)
-- Sender spoof detection (`From` domain vs `Return-Path` domain)
-- Overall email risk percent calculation and level mapping
+- Visual homograph detection against sender domain (`similarity_score > 0.85`)
+- URL shortener detection (`bit.ly`, `tinyurl.com`, `t.co`, `goo.gl`)
+- Suspicious keyword density check (`login`, `verify`, `secure`, `account`, `bank`) across domain + full URL
+- Raw IP URL detection
+- Excessive subdomain detection (> 3 dots in host)
+- Suspicious TLD detection (`xyz`, `top`, `work`)
+- Excessive hyphen detection (>= 3 in base domain)
+- Long URL signal (length > 75, only if another signal is already active)
+- External-link signal relative to sender domain
+- Per-URL risk scoring with cap at 100
+- Email-level risk scoring with spoof penalty and level mapping
+- CORS middleware enabled for frontend usage
 
-## Detection Logic (Current)
+## Risk Scoring (Current Weights)
 
-### URL-level checks
+Per URL:
 
-For each extracted URL:
+- +50 visual homograph
+- +40 unicode homograph
+- +15 shortened URL
+- +45 suspicious keyword density
+- +40 raw IP URL
+- +20 excessive subdomains
+- +10 suspicious TLD
+- +10 excessive hyphens
+- +10 long URL (only when risk is already > 0)
+- +5 external domain (only when risk is already > 0)
+- final cap: 100
 
-1. Expand to the final destination URL.
-2. Build destination base domain with `tldextract`.
-3. Compute detection signals:
-   - `visual_homograph`
-   - `unicode_homograph`
-   - `shortened_url`
-   - `external_link`
-   - `suspicious_domain`
-4. Compute `similarity_score` against the sender domain when sender exists.
-5. Build weighted risk score:
-   - +50 for `visual_homograph`
-   - +40 for `unicode_homograph`
-   - +15 for `shortened_url`
-   - if score already > 0: +5 for `external_link`
-   - if score already > 0: +5 for `suspicious_domain`
-   - cap at `100`
-6. Generate explanation text from active signals.
-7. Classify URL:
-   - `risk_percent > 0` -> `risky_urls`
-   - `risk_percent == 0` -> `safe_urls`
+Email-level risk:
 
-### Email-level checks
+- `avg_risk = int(total_url_risk / total_urls)`
+- `+25` if sender spoofed
+- final cap: 100
+- level mapping:
+   - `0-29`: low (green)
+   - `30-69`: medium (yellow)
+   - `70-100`: high (red)
 
-1. Parse sender headers from content:
-   - `From:`
-   - `Return-Path:`
-2. Determine spoofing:
-   - `spoofed = sender_domain != return_domain`
-   - if either domain is missing, spoofed is `False`
-3. Compute email risk:
-   - `avg_risk = int(total_risk / len(urls))` (or `0` if no URLs)
-   - `email_risk = avg_risk`
-   - if `spoofed`: `email_risk += 25`
-   - cap at `100`
-4. Map `email_risk_percent` to risk level:
-   - `0-29` -> `low` (`green`)
-   - `30-69` -> `medium` (`yellow`)
-   - `70-100` -> `high` (`red`)
-
-## API Endpoints
+## API
 
 ### GET /
 
-Returns service health status.
+Health endpoint.
 
-Example response:
+Example:
 
 ```json
 {
-  "status": "Phishing Forensics API running"
+   "status": "Phishing Forensics API running"
 }
 ```
 
 ### POST /analyze
 
-Analyzes email/message content.
-
 Request body:
 
 ```json
 {
-  "content": "From: support@secure-mail.com\nReturn-Path: alerts@secure-mail.com\nReview now: https://bit.ly/abc123"
+   "content": "From: support@company.com\nReturn-Path: alerts@company.com\nCheck this now: https://bit.ly/demo"
 }
 ```
 
-Response shape:
+Response includes:
 
-```json
-{
-  "total_urls": 1,
-  "risky_count": 1,
-  "safe_count": 0,
-   "email_risk_percent": 25,
-   "risk_level": "low",
-   "risk_color": "green",
-  "email_analysis": {
-    "sender": "support@secure-mail.com",
-    "return_path": "alerts@secure-mail.com",
-    "spoofed": false
-  },
-  "risky_urls": [
-    {
-      "original_url": "https://bit.ly/abc123",
-      "expanded_url": "https://example-login-check.com",
-      "risk_percent": 25,
-      "visual_homograph": false,
-      "similarity_score": 0.24,
-      "unicode_homograph": false,
-      "shortened_url": true,
-      "external_link": true,
-      "suspicious_domain": true,
-      "explanation": "This URL shortened URL hides destination and points to external domain and contains phishing-related keywords."
-    }
-  ],
-  "safe_urls": []
-}
-```
+- `email_risk_percent`, `risk_level`, `risk_color`
+- `email_analysis` (`sender`, `return_path`, `spoofed`)
+- `risky_urls` and `safe_urls`
+- per-URL explanations and individual signal booleans
 
-## Current Keyword and Shortener Lists
-
-Suspicious keyword list:
-
-- `login`
-- `verify`
-- `secure`
-- `account`
-- `bank`
-
-Known URL shorteners:
-
-- `bit.ly`
-- `tinyurl.com`
-- `t.co`
-- `goo.gl`
-
-## Project Structure
+## Project Layout
 
 ```text
 phising_backend/
 |- main.py
-|- pyrightconfig.json
 |- detection_core_logic.txt
 |- README.md
+|- DEV_README.md
+|- frontend/
+|  |- src/
+|  |- README.md
+|  |- temp_move/
+|     |- main.py
+|     |- detection_core_logic.txt
+|     |- README.md
+|     |- pyrightconfig.json
 ```
 
-## Python/Type-Checking Configuration
+`frontend/temp_move` is used as a mirror snapshot for backend artifacts.
 
-Current `pyrightconfig.json` values:
+## Setup (Windows PowerShell)
 
-- `venvPath`: `.`
-- `venv`: `venv`
-- `pythonVersion`: `3.14`
-- `pythonPlatform`: `Windows`
-
-## Dependencies
-
-Install these packages:
-
-- `fastapi`
-- `pydantic`
-- `requests`
-- `tldextract`
-- `uvicorn[standard]`
-
-## Run Locally (Windows PowerShell)
+Backend:
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install fastapi pydantic requests tldextract "uvicorn[standard]"
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
-Default local server: `http://127.0.0.1:8000`
+Frontend:
 
-Interactive API docs: `http://127.0.0.1:8000/docs`
+```powershell
+cd frontend
+npm install
+npm run dev
+```
 
-## Quick Test (PowerShell)
+Useful URLs:
+
+- API: `http://127.0.0.1:8000`
+- API docs: `http://127.0.0.1:8000/docs`
+
+## Quick API Test
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8000/analyze" -ContentType "application/json" -Body '{"content":"From: support@secure-mail.com\nReturn-Path: alerts@secure-mail.com\nClick: https://bit.ly/abc123 and https://example.org"}'
 ```
 
-## Current Limitations
+## Known Limitations
 
-- Heuristic-only detection (no ML model yet)
-- Static keyword and shortener lists
-- Similarity threshold is rule-based and may produce false positives/negatives
-- External and keyword signals only add points when another signal has already raised risk
-- Header parsing is simple regex-based extraction
-- URL expansion depends on network reachability/timeouts
-- No SPF/DKIM/DMARC validation
-- No threat-intelligence reputation integration
+- Heuristic/rule-based detection (no ML model yet)
+- Static signal lists and thresholds
+- Network dependency for URL expansion
+- No SPF/DKIM/DMARC verification
+- No threat-intelligence feed integration

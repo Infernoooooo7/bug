@@ -1,16 +1,43 @@
-# React + Vite
+# Frontend (PhishForensics Sandbox)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for visualizing phishing analysis results from the FastAPI backend.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Paste raw email/message content
+- Submit analysis request to backend `POST /analyze`
+- Render threat score and risk level
+- Show sender/return-path spoofing analysis
+- Display risky and safe URL cards with explanations
+- Export report to PDF using `html2pdf.js`
 
-## React Compiler
+## API Dependency
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Current hardcoded analyze endpoint in `src/App.jsx`:
 
-## Expanding the ESLint configuration
+- `http://127.0.0.1:8000/analyze`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Make sure backend is running before using the UI.
+
+## Run Locally
+
+```powershell
+npm install
+npm run dev
+```
+
+Vite default local URL is usually shown in terminal (commonly `http://localhost:5173`).
+
+## Build
+
+```powershell
+npm run build
+npm run preview
+```
+
+## Tech Stack
+
+- React 19
+- Vite
+- html2pdf.js
+- CSS-based custom dashboard UI
