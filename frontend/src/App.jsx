@@ -56,7 +56,7 @@ function App() {
     let y = 10;
 
     doc.setFontSize(16);
-    doc.text("NMAMIT Phishing Forensics Report", 10, y);
+    doc.text("Phishing Forensics Report", 10, y);
     y += 10;
 
     doc.setFontSize(10);
@@ -145,13 +145,12 @@ function App() {
 
                 <div className="risk-bar">
                   <div
-                    className={`risk-fill ${
-                      url.risk_percent > 70
+                    className={`risk-fill ${url.risk_percent > 70
                         ? "high"
                         : url.risk_percent > 30
-                        ? "medium"
-                        : "low"
-                    }`}
+                          ? "medium"
+                          : "low"
+                      }`}
                     style={{ width: `${url.risk_percent}%` }}
                   ></div>
                 </div>

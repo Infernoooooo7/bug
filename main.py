@@ -1,5 +1,6 @@
 from entropy_analysis import is_high_entropy_domain
 from db import init_db, save_scan, get_recent_scans
+from threat_api import check_url_virustotal
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -19,7 +20,6 @@ from url_risk_signals import (
 
 app = FastAPI()
 
-# Initialize DB
 init_db()
 
 app.add_middleware(
@@ -107,7 +107,6 @@ def home():
     return {"status": "Phishing Forensics API running"}
 
 
-# 🔥 NEW HISTORY ENDPOINT (YOUR VERSION)
 @app.get("/history")
 async def get_history():
     scans = get_recent_scans(limit=10)
@@ -180,6 +179,12 @@ def analyze_email(data: EmailInput):
         if long_flag and risk > 0: risk += 10
         if risk > 0 and external: risk += 5
 
+        # 🔥 VirusTotal (only if already suspicious)
+        if risk > 20:
+            vt_flag, vt_reason = check_url_virustotal(expanded)
+            if vt_flag:
+                risk += 40
+
         risk = min(risk, 100)
 
         reasons = []
@@ -195,6 +200,9 @@ def analyze_email(data: EmailInput):
         if entropy_flag: reasons.append(f"high randomness (entropy={round(entropy_value,2)})")
         if long_flag and risk > 0: reasons.append("unusually long URL")
         if external and risk > 20: reasons.append("external domain")
+
+        if risk > 60:
+            reasons.append("flagged by real-world threat intelligence (VirusTotal)")
 
         explanation = (
             "This URL " + " and ".join(reasons) + "."
@@ -233,7 +241,6 @@ def analyze_email(data: EmailInput):
     elif risk_level == "medium":
         risk_color = "yellow"
 
-    # Save to DB
     save_scan(sender, return_path, risk_level, email_risk)
 
     return {
