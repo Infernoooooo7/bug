@@ -1,0 +1,10 @@
+{
+    "manifest_version": 3,
+    "name": "PhishForensics Extension",
+    "version": "1.0",
+    "description": "Analyze suspicious emails and URLs for phishing risk",
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "permissions": []
+}

@@ -10,9 +10,10 @@ from db import (
 )
 from threat_api import check_url_virustotal
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from report_generator import generate_pdf_report
 
 import re
 import requests
@@ -51,6 +52,13 @@ class LoginInput(BaseModel):
 class UpdateLogInput(BaseModel):
     risk_level: str
     risk_percent: int
+
+class ReportInput(BaseModel):
+    risk_level: str = "low"
+    email_risk_percent: int = 0
+    email_analysis: dict = {}
+    risky_urls: list = []
+    safe_urls: list = []
 
 
 # ========================
@@ -177,6 +185,16 @@ def delete_log(log_id: int):
 def update_log(log_id: int, data: UpdateLogInput):
     update_scan(log_id, data.risk_level, data.risk_percent)
     return {"success": True, "message": "Log updated successfully"}
+
+
+@app.post("/generate-report")
+def generate_report(data: ReportInput):
+    pdf_bytes = generate_pdf_report(data.dict())
+    return Response(
+        content=pdf_bytes, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": "attachment; filename=Forensic_Report.pdf"}
+    )
 
 
 @app.post("/analyze")

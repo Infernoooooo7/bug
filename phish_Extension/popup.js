@@ -1,0 +1,34 @@
+document.getElementById('analyzeBtn').addEventListener('click', async () => {
+    const input = document.getElementById('input').value;
+    const resultDiv = document.getElementById('result');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    
+    if (!input.trim()) return;
+    
+    analyzeBtn.disabled = true;
+    resultDiv.textContent = "Analyzing...";
+    
+    try {
+        const API = "http://10.115.31.83:8000";
+        const res = await fetch(`${API}/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: input })
+        });
+        
+        const data = await res.json();
+        
+        let color = "#10B981"; // Low risk
+        if (data.risk_level === "medium") color = "#F59E0B";
+        if (data.risk_level === "high") color = "#EF4444";
+        
+        resultDiv.innerHTML = `
+          <strong style="color: ${color}">Risk Level: ${data.risk_level.toUpperCase()}</strong><br>
+          Score: ${data.email_risk_percent}%
+        `;
+    } catch (e) {
+        resultDiv.textContent = "Error connecting to server. Is FastAPI running?";
+    } finally {
+        analyzeBtn.disabled = false;
+    }
+});
