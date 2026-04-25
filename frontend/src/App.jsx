@@ -98,98 +98,169 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className="app-wrapper">
+      {/* Background ambient effects */}
+      <div className="ambient-glow glow-1"></div>
+      <div className="ambient-glow glow-2"></div>
 
-      <h1 className="title">
-        Phish<span className="highlight">Forensics</span> Sandbox
-      </h1>
-
-      {/* INPUT */}
-      <div className="glass-card">
-        <h2>Target Payload</h2>
-
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Paste email here..."
-        />
-
-        <button onClick={analyze}>
-          {loading ? "Analyzing..." : "Analyze"}
-        </button>
-      </div>
-
-      {/* RESULT */}
-      {result && (
-        <>
-          <div className="glass-card">
-            <h2>Threat Level</h2>
-
-            <p className={`threat ${result.risk_level}`}>
-              {result.email_risk_percent}% — {result.risk_level.toUpperCase()}
-            </p>
-
-            <button onClick={generatePDF}>
-              Download Report
-            </button>
+      <div className="container">
+        <header className="header">
+          <div className="logo-container">
+            <div className="logo-icon">🛡️</div>
+            <h1 className="title">
+              Phish<span className="highlight">Forensics</span>
+            </h1>
           </div>
+          <p className="subtitle">Advanced Threat Intelligence Sandbox</p>
+        </header>
 
-          <div className="glass-card">
-            <h2>Risky URLs</h2>
-
-            {result.risky_urls.map((url, i) => (
-              <div key={i} className="url-block">
-
-                <p>{url.original_url}</p>
-                <p>Risk: {url.risk_percent}%</p>
-
-                <div className="risk-bar">
-                  <div
-                    className={`risk-fill ${url.risk_percent > 70
-                        ? "high"
-                        : url.risk_percent > 30
-                          ? "medium"
-                          : "low"
-                      }`}
-                    style={{ width: `${url.risk_percent}%` }}
-                  ></div>
-                </div>
-
-                <p>{url.explanation}</p>
-
+        <main className="main-content">
+          <div className="left-column">
+            {/* INPUT SECTION */}
+            <section className="glass-card input-section">
+              <div className="card-header">
+                <h2>🎯 Target Payload</h2>
+                <span className="status-badge">Sandboxed</span>
               </div>
-            ))}
+              <p className="section-desc">Enter the suspicious email content, headers, or raw text below for deep inspection.</p>
+              
+              <div className="textarea-wrapper">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Paste email headers, body, or suspicious URLs here..."
+                  spellCheck="false"
+                />
+              </div>
+
+              <button 
+                className={`primary-btn ${loading ? 'loading' : ''}`} 
+                onClick={analyze}
+                disabled={loading || !input.trim()}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner"></span>
+                    Analyzing Payload...
+                  </>
+                ) : (
+                  <>
+                    <span className="btn-icon">⚡</span>
+                    Initiate Scan
+                  </>
+                )}
+              </button>
+            </section>
+
+            {/* RESULT SECTION */}
+            {result && (
+              <div className="results-container animate-fade-in">
+                <section className="glass-card threat-card">
+                  <div className="card-header">
+                    <h2>⚠️ Threat Assessment</h2>
+                    <button className="secondary-btn" onClick={generatePDF}>
+                      📄 Export PDF
+                    </button>
+                  </div>
+                  
+                  <div className="threat-indicator-wrapper">
+                    <div className="threat-score-ring">
+                       <svg viewBox="0 0 36 36" className={`circular-chart ${result.risk_level}`}>
+                        <path className="circle-bg"
+                          d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path className="circle"
+                          strokeDasharray={`${result.email_risk_percent}, 100`}
+                          d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                      </svg>
+                      <div className="score-text">
+                        <span className={`score-value ${result.risk_level}`}>{result.email_risk_percent}%</span>
+                      </div>
+                    </div>
+                    <div className="threat-details">
+                      <h3 className={result.risk_level}>{result.risk_level.toUpperCase()} RISK</h3>
+                      <p className="threat-summary">Our heuristic engine has classified this payload with a {result.risk_level} severity level.</p>
+                    </div>
+                  </div>
+                </section>
+
+                {result.risky_urls && result.risky_urls.length > 0 && (
+                  <section className="glass-card analysis-card">
+                    <h2>🔗 URL Forensics</h2>
+                    <div className="url-list">
+                      {result.risky_urls.map((url, i) => (
+                        <div key={i} className="url-block">
+                          <div className="url-header">
+                            <span className="url-text">{url.original_url}</span>
+                            <span className={`risk-badge ${url.risk_percent > 70 ? 'high' : url.risk_percent > 30 ? 'medium' : 'low'}`}>
+                              Risk: {url.risk_percent}%
+                            </span>
+                          </div>
+                          
+                          <div className="risk-bar">
+                            <div
+                              className={`risk-fill ${url.risk_percent > 70 ? "high" : url.risk_percent > 30 ? "medium" : "low"}`}
+                              style={{ width: `${url.risk_percent}%` }}
+                            ></div>
+                          </div>
+                          
+                          <p className="explanation">
+                            <span className="explanation-icon">ℹ️</span>
+                            {url.explanation}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
           </div>
-        </>
-      )}
 
-      {/* HISTORY */}
-      <div className="glass-card">
-        <h2>Scan History</h2>
-
-        {history.map((item) => (
-          <div key={item.id} className={`history-card ${item.risk_level}`}>
-
-            <div className="history-header">
-              <span>{item.timestamp}</span>
-              <span className={`badge ${item.risk_level}`}>
-                {item.risk_level}
-              </span>
-            </div>
-
-            <p>{item.sender}</p>
-
-            <div className="risk-bar">
-              <div
-                className={`risk-fill ${item.risk_level}`}
-                style={{ width: `${item.risk_percent}%` }}
-              ></div>
-            </div>
-
+          <div className="right-column">
+            {/* HISTORY SECTION */}
+            <section className="glass-card history-section">
+              <div className="card-header">
+                <h2>🕒 Scan History</h2>
+                <span className="history-count">{history.length} Scans</span>
+              </div>
+              
+              <div className="history-list">
+                {history.length === 0 ? (
+                  <div className="empty-state">No scan history available.</div>
+                ) : (
+                  history.map((item) => (
+                    <div key={item.id} className={`history-card ${item.risk_level}`}>
+                      <div className="history-card-inner">
+                        <div className="history-header">
+                          <span className="timestamp">{item.timestamp}</span>
+                          <span className={`badge ${item.risk_level}`}>
+                            {item.risk_level.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="sender-info" title={item.sender}>
+                          {item.sender || "Unknown Sender"}
+                        </p>
+                        <div className="risk-bar mini">
+                          <div
+                            className={`risk-fill ${item.risk_level}`}
+                            style={{ width: `${item.risk_percent}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
           </div>
-        ))}
+        </main>
       </div>
-
     </div>
   );
 }
