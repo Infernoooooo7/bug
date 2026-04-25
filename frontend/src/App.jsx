@@ -53,48 +53,169 @@ function App() {
     if (!result) return;
 
     const doc = new jsPDF();
-    let y = 10;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    let y = 20;
 
-    doc.setFontSize(16);
-    doc.text("Phishing Forensics Report", 10, y);
+    const checkPageBreak = (neededHeight) => {
+      if (y + neededHeight > pageHeight - margin) {
+        doc.addPage();
+        y = 20;
+      }
+    };
+
+    // Header Background
+    doc.setFillColor(11, 15, 25);
+    doc.rect(0, 0, pageWidth, 40, "F");
+
+    // Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("PhishForensics Report", margin, 25);
+
+    // Subtitle / Date
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(156, 163, 175);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 32);
+
+    y = 55;
+
+    // --- Section: Threat Assessment ---
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Threat Assessment", margin, y);
+    
+    // Draw line
+    doc.setDrawColor(229, 231, 235);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
+    y += 12;
+
+    // Risk Level Badge
+    const riskLevel = result.risk_level.toUpperCase();
+    let riskColor = [16, 185, 129]; // success
+    if (result.risk_level === "medium") riskColor = [245, 158, 11]; // warning
+    if (result.risk_level === "high") riskColor = [239, 68, 68]; // danger
+
+    doc.setFillColor(...riskColor);
+    doc.rect(margin, y, 60, 10, "F");
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(`RISK LEVEL: ${riskLevel}`, margin + 5, y + 7);
+
+    // Risk Percent
+    doc.setTextColor(17, 24, 39);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Overall Threat Score: ${result.email_risk_percent}%`, margin + 65, y + 7);
+    y += 20;
+
+    // --- Section: Email Metadata ---
+    checkPageBreak(30);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Email Metadata", margin, y);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
     y += 10;
 
     doc.setFontSize(10);
-    doc.text(`Timestamp: ${new Date().toLocaleString()}`, 10, y);
+    doc.setFont("helvetica", "bold");
+    doc.text("Sender:", margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(result.email_analysis?.sender || "Unknown", margin + 25, y);
     y += 6;
 
-    doc.text(`Sender: ${result.email_analysis.sender}`, 10, y);
-    y += 6;
+    doc.setFont("helvetica", "bold");
+    doc.text("Return Path:", margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(result.email_analysis?.return_path || "Unknown", margin + 25, y);
+    y += 15;
 
-    doc.text(`Return Path: ${result.email_analysis.return_path}`, 10, y);
-    y += 6;
-
-    doc.text(`Risk: ${result.risk_level.toUpperCase()} (${result.email_risk_percent}%)`, 10, y);
+    // --- Section: Payload Content ---
+    checkPageBreak(40);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Analyzed Payload", margin, y);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
     y += 10;
 
-    doc.text("----- Email Content -----", 10, y);
-    y += 6;
+    doc.setFontSize(9);
+    doc.setFont("courier", "normal");
+    doc.setTextColor(75, 85, 99); 
+    
+    doc.setDrawColor(209, 213, 219);
+    doc.setLineWidth(1);
+    
+    const emailLines = doc.splitTextToSize(input, pageWidth - margin * 2 - 4);
+    for (let i = 0; i < emailLines.length; i++) {
+        checkPageBreak(10);
+        doc.line(margin, y - 3, margin, y + 2);
+        doc.text(emailLines[i], margin + 3, y);
+        y += 4;
+    }
+    y += 10;
 
-    const emailText = doc.splitTextToSize(input, 180);
-    doc.text(emailText, 10, y);
-    y += emailText.length * 5 + 6;
+    // --- Section: URL Forensics ---
+    doc.setTextColor(17, 24, 39);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    checkPageBreak(20);
+    doc.text("URL Forensics", margin, y);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
+    y += 10;
 
-    doc.text("----- Malicious URLs -----", 10, y);
-    y += 6;
+    if (!result.risky_urls || result.risky_urls.length === 0) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.text("No suspicious URLs detected in the payload.", margin, y);
+    } else {
+        result.risky_urls.forEach((url, i) => {
+            checkPageBreak(30);
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(17, 24, 39);
+            const titleStr = `${i + 1}. Target URL:`;
+            doc.text(titleStr, margin, y);
+            
+            doc.setFont("courier", "normal");
+            doc.setTextColor(37, 99, 235);
+            const urlLines = doc.splitTextToSize(url.original_url, pageWidth - margin - 40);
+            doc.text(urlLines, margin + 25, y);
+            y += (urlLines.length * 4) + 2;
 
-    result.risky_urls.forEach((url, i) => {
-      doc.text(`${i + 1}. ${url.original_url}`, 10, y);
-      y += 5;
+            const isHigh = url.risk_percent > 70;
+            const isMedium = url.risk_percent > 30;
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(isHigh ? 239 : isMedium ? 245 : 16, 
+                             isHigh ? 68 : isMedium ? 158 : 185, 
+                             isHigh ? 68 : isMedium ? 11 : 129);
+            doc.text(`Risk Score: ${url.risk_percent}%`, margin + 5, y);
+            y += 5;
 
-      doc.text(`Risk: ${url.risk_percent}%`, 10, y);
-      y += 5;
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(75, 85, 99);
+            const exp = doc.splitTextToSize(`Finding: ${url.explanation}`, pageWidth - margin * 2 - 10);
+            doc.text(exp, margin + 5, y);
+            y += exp.length * 5 + 6;
+        });
+    }
 
-      const exp = doc.splitTextToSize(url.explanation, 180);
-      doc.text(exp, 10, y);
-      y += exp.length * 5 + 6;
-    });
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(156, 163, 175);
+        doc.text(`PhishForensics - Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+    }
 
-    doc.save("phishing_report.pdf");
+    doc.save(`Forensics_Report_${new Date().getTime()}.pdf`);
   };
 
   return (
