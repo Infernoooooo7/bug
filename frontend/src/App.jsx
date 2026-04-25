@@ -4,7 +4,7 @@ import './App.css';
 
 export default function App() {
   // CONFIGURATION: Replace '127.0.0.1' with your friend's laptop IP (e.g., '192.168.1.5')
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.115.31.83:8000/docs';
   
   const [emailText, setEmailText] = useState('');
   const [isScanning, setIsScanning] = useState(false);
