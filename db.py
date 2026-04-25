@@ -59,6 +59,30 @@ def get_recent_scans(limit=10):
     return rows
 
 
+def delete_scan(log_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM history WHERE id = ?", (log_id,))
+
+    conn.commit()
+    conn.close()
+
+
+def update_scan(log_id, risk_level, risk_percent):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE history 
+        SET risk_level = ?, risk_percent = ?
+        WHERE id = ?
+    """, (risk_level, risk_percent, log_id))
+
+    conn.commit()
+    conn.close()
+
+
 # ========================
 # 🔥 CACHE FUNCTIONS
 # ========================

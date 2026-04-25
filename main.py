@@ -4,7 +4,9 @@ from db import (
     save_scan,
     get_recent_scans,
     get_cached_url,
-    save_url_cache
+    save_url_cache,
+    delete_scan,
+    update_scan
 )
 from threat_api import check_url_virustotal
 
@@ -44,6 +46,11 @@ class EmailInput(BaseModel):
 class LoginInput(BaseModel):
     username: str
     password: str
+
+
+class UpdateLogInput(BaseModel):
+    risk_level: str
+    risk_percent: int
 
 
 # ========================
@@ -136,7 +143,9 @@ def home():
 @app.post("/login")
 def login(data: LoginInput):
     if data.username == "admin" and data.password == "admin123":
-        return {"success": True, "message": "Login successful"}
+        return {"success": True, "role": "admin", "message": "Login successful"}
+    if data.username == "user" and data.password == "user123":
+        return {"success": True, "role": "analyst", "message": "Login successful"}
     return {"success": False, "message": "Invalid credentials"}
 
 
@@ -156,6 +165,18 @@ async def get_history():
         })
 
     return {"history": history}
+
+
+@app.delete("/delete-log/{log_id}")
+def delete_log(log_id: int):
+    delete_scan(log_id)
+    return {"success": True, "message": "Log deleted successfully"}
+
+
+@app.put("/update-log/{log_id}")
+def update_log(log_id: int, data: UpdateLogInput):
+    update_scan(log_id, data.risk_level, data.risk_percent)
+    return {"success": True, "message": "Log updated successfully"}
 
 
 @app.post("/analyze")

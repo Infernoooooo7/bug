@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
+import AdminPanel from "./AdminPanel";
 import "./App.css";
 
 function App() {
@@ -10,6 +11,9 @@ function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("phish_auth") === "true"
+  );
+  const [role, setRole] = useState(
+    localStorage.getItem("phish_role") || ""
   );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +37,9 @@ function App() {
       
       if (data.success) {
         setIsLoggedIn(true);
+        setRole(data.role || "analyst");
         localStorage.setItem("phish_auth", "true");
+        localStorage.setItem("phish_role", data.role || "analyst");
       } else {
         setLoginError(data.message || "Invalid credentials");
       }
@@ -45,7 +51,9 @@ function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setRole("");
     localStorage.removeItem("phish_auth");
+    localStorage.removeItem("phish_role");
     setResult(null);
     setInput("");
     setUsername("");
@@ -315,7 +323,10 @@ function App() {
                 {loginLoading ? <span className="spinner"></span> : "Authenticate"}
               </button>
             </form>
-            <div className="login-hint">Demo Access: admin / admin123</div>
+            <div className="login-hint">
+              <strong>Admin:</strong> admin / admin123<br/>
+              <strong>Analyst:</strong> user / user123
+            </div>
           </div>
         </div>
       </div>
@@ -344,8 +355,12 @@ function App() {
           <p className="subtitle">Advanced Threat Intelligence Sandbox</p>
         </header>
 
-        <main className="main-content">
-          <div className="left-column">
+        <main className={`main-content ${role === 'admin' ? 'admin-mode' : ''}`}>
+          {role === 'admin' ? (
+            <AdminPanel history={history} API={API} fetchHistory={fetchHistory} />
+          ) : (
+            <>
+            <div className="left-column">
             {/* INPUT SECTION */}
             <section className="glass-card input-section">
               <div className="card-header">
@@ -450,45 +465,47 @@ function App() {
                 )}
               </div>
             )}
-          </div>
+            </div>
 
-          <div className="right-column">
-            {/* HISTORY SECTION */}
-            <section className="glass-card history-section">
-              <div className="card-header">
-                <h2>🕒 Scan History</h2>
-                <span className="history-count">{history.length} Scans</span>
-              </div>
-              
-              <div className="history-list">
-                {history.length === 0 ? (
-                  <div className="empty-state">No scan history available.</div>
-                ) : (
-                  history.map((item) => (
-                    <div key={item.id} className={`history-card ${item.risk_level}`}>
-                      <div className="history-card-inner">
-                        <div className="history-header">
-                          <span className="timestamp">{item.timestamp}</span>
-                          <span className={`badge ${item.risk_level}`}>
-                            {item.risk_level.toUpperCase()}
-                          </span>
-                        </div>
-                        <p className="sender-info" title={item.sender}>
-                          {item.sender || "Unknown Sender"}
-                        </p>
-                        <div className="risk-bar mini">
-                          <div
-                            className={`risk-fill ${item.risk_level}`}
-                            style={{ width: `${item.risk_percent}%` }}
-                          ></div>
+            <div className="right-column">
+              {/* HISTORY SECTION */}
+              <section className="glass-card history-section">
+                <div className="card-header">
+                  <h2>🕒 Scan History</h2>
+                  <span className="history-count">{history.length} Scans</span>
+                </div>
+                
+                <div className="history-list">
+                  {history.length === 0 ? (
+                    <div className="empty-state">No scan history available.</div>
+                  ) : (
+                    history.map((item) => (
+                      <div key={item.id} className={`history-card ${item.risk_level}`}>
+                        <div className="history-card-inner">
+                          <div className="history-header">
+                            <span className="timestamp">{item.timestamp}</span>
+                            <span className={`badge ${item.risk_level}`}>
+                              {item.risk_level.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="sender-info" title={item.sender}>
+                            {item.sender || "Unknown Sender"}
+                          </p>
+                          <div className="risk-bar mini">
+                            <div
+                              className={`risk-fill ${item.risk_level}`}
+                              style={{ width: `${item.risk_percent}%` }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          </div>
+                    ))
+                  )}
+                </div>
+              </section>
+            </div>
+            </>
+          )}
         </main>
       </div>
     </div>
