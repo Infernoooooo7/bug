@@ -1,133 +1,198 @@
-import { useState } from 'react';
-import { generateForensicPDF } from './utils/generateForensicPDF';
-import './App.css';
+import { useState, useEffect } from "react";
+import { jsPDF } from "jspdf";
+import "./App.css";
 
-export default function App() {
-  // CONFIGURATION: Replace with your backend API endpoint
-  const API_URL = "http://10.115.31.83:8000/analyze";
-  
-  const [emailText, setEmailText] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [results, setResults] = useState(null);
-  const [scanData, setScanData] = useState(null);
+function App() {
+  const [input, setInput] = useState("");
+  const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleScan = async () => {
-    if (!emailText) return;
-    setIsScanning(true);
-    setResults(null);
-    setScanData(null);
+  const API = "http://10.115.31.83:8000";
+
+  const analyze = async () => {
+    if (!input.trim()) return;
+
+    setLoading(true);
 
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: emailText })
+      const res = await fetch(`${API}/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ content: input })
       });
-      const data = await response.json();
-      setScanData(data);
 
-      setResults({
-        score: data.email_risk_percent,
-        level: data.risk_level,
-        color: data.risk_color,
-        analysis: data.email_analysis,
-        allUrls: [...data.risky_urls, ...data.safe_urls],
-        caseId: Math.random().toString(36).toUpperCase().substring(2, 10),
-        timestamp: new Date().toLocaleString()
-      });
-    } catch (error) {
-      console.error("Backend Connection Failed:", error);
-      alert(`Error: Ensure the server at ${API_URL} is running and CORS is enabled.`);
-    } finally {
-      setIsScanning(false);
+      const data = await res.json();
+      setResult(data);
+      fetchHistory();
+
+    } catch (err) {
+      console.error(err);
+    }
+
+    setLoading(false);
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch(`${API}/history`);
+      const data = await res.json();
+      setHistory(data.history || []);
+    } catch {
+      setHistory([]);
     }
   };
 
-  const handleExportPDF = () => {
-    if (!scanData) return;
-    generateForensicPDF(scanData, emailText);
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const generatePDF = () => {
+    if (!result) return;
+
+    const doc = new jsPDF();
+    let y = 10;
+
+    doc.setFontSize(16);
+    doc.text("NMAMIT Phishing Forensics Report", 10, y);
+    y += 10;
+
+    doc.setFontSize(10);
+    doc.text(`Timestamp: ${new Date().toLocaleString()}`, 10, y);
+    y += 6;
+
+    doc.text(`Sender: ${result.email_analysis.sender}`, 10, y);
+    y += 6;
+
+    doc.text(`Return Path: ${result.email_analysis.return_path}`, 10, y);
+    y += 6;
+
+    doc.text(`Risk: ${result.risk_level.toUpperCase()} (${result.email_risk_percent}%)`, 10, y);
+    y += 10;
+
+    doc.text("----- Email Content -----", 10, y);
+    y += 6;
+
+    const emailText = doc.splitTextToSize(input, 180);
+    doc.text(emailText, 10, y);
+    y += emailText.length * 5 + 6;
+
+    doc.text("----- Malicious URLs -----", 10, y);
+    y += 6;
+
+    result.risky_urls.forEach((url, i) => {
+      doc.text(`${i + 1}. ${url.original_url}`, 10, y);
+      y += 5;
+
+      doc.text(`Risk: ${url.risk_percent}%`, 10, y);
+      y += 5;
+
+      const exp = doc.splitTextToSize(url.explanation, 180);
+      doc.text(exp, 10, y);
+      y += exp.length * 5 + 6;
+    });
+
+    doc.save("phishing_report.pdf");
   };
 
   return (
     <div className="container">
-      <header style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', margin: 0 }}>Phish<span style={{ color: '#39ff14' }}>Forensics</span> Sandbox</h1>
-        <p style={{ color: '#94a3b8' }}>Forensic Terminal v1.0.4</p>
-      </header>
 
+      <h1 className="title">
+        Phish<span className="highlight">Forensics</span> Sandbox
+      </h1>
+
+      {/* INPUT */}
       <div className="glass-card">
-        <h2 style={{ marginTop: 0, color: '#f8fafc' }}>Target Payload</h2>
-        <textarea 
-          className="textarea"
-          style={{ width: '100%', height: '180px', background: '#000', border: '1px dashed #333', color: '#39ff14', padding: '15px', borderRadius: '8px', marginBottom: '15px', outline: 'none', fontFamily: 'monospace' }}
-          placeholder="Paste raw email content for forensic unmasking..."
-          value={emailText}
-          onChange={(e) => setEmailText(e.target.value)}
+        <h2>Target Payload</h2>
+
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Paste email here..."
         />
-        <button onClick={handleScan} style={{ width: '100%', padding: '14px', background: '#39ff14', color: '#000', fontWeight: '800', border: 'none', borderRadius: '8px', cursor: 'pointer', letterSpacing: '1px' }}>
-          {isScanning ? "EXECUTING HEURISTICS..." : "ANALYZE VECTORS"}
+
+        <button onClick={analyze}>
+          {loading ? "Analyzing..." : "Analyze"}
         </button>
       </div>
 
-      {isScanning && <div className="loading">[SYSTEM] Unmasking URLs... running similarity checks...</div>}
+      {/* RESULT */}
+      {result && (
+        <>
+          <div className="glass-card">
+            <h2>Threat Level</h2>
 
-      {results && !isScanning && (
-        <div style={{ padding: '25px', background: '#050505', borderRadius: '12px' }}>
-          {/* BRANDED HEADER */}
-          <div className="forensic-header">
-            <h2 className="branding-title">PhishForensics Sandbox</h2>
-            <div className="metadata-row">
-              <span>CASE_ID: {results.caseId}</span>
-              <span>TIMESTAMP: {results.timestamp}</span>
-              <span style={{ color: results.color, fontWeight: 'bold' }}>STATUS: {results.level.toUpperCase()} RISK</span>
-            </div>
+            <p className={`threat ${result.risk_level}`}>
+              {result.email_risk_percent}% — {result.risk_level.toUpperCase()}
+            </p>
+
+            <button onClick={generatePDF}>
+              Download Report
+            </button>
           </div>
 
-          <div className="dashboard">
-            {/* HEADER ANALYSIS */}
-            <div className={`glass-card ${results.analysis?.spoofed ? 'spoof-alert' : ''}`}>
-              <h3 style={{ marginTop: 0, color: '#e2e8f0' }}>Header Integrity Scan</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div style={{ background: '#111', padding: '12px', borderRadius: '8px', border: '1px solid #222' }}>
-                  <span className="insight-label">Reported Sender</span>
-                  <div className="mono-text" style={{ fontSize: '0.9rem' }}>{results.analysis?.sender}</div>
+          <div className="glass-card">
+            <h2>Risky URLs</h2>
+
+            {result.risky_urls.map((url, i) => (
+              <div key={i} className="url-block">
+
+                <p>{url.original_url}</p>
+                <p>Risk: {url.risk_percent}%</p>
+
+                <div className="risk-bar">
+                  <div
+                    className={`risk-fill ${
+                      url.risk_percent > 70
+                        ? "high"
+                        : url.risk_percent > 30
+                        ? "medium"
+                        : "low"
+                    }`}
+                    style={{ width: `${url.risk_percent}%` }}
+                  ></div>
                 </div>
-                <div style={{ background: '#111', padding: '12px', borderRadius: '8px', border: '1px solid #222' }}>
-                  <span className="insight-label">Return-Path</span>
-                  <div className="mono-text" style={{ fontSize: '0.9rem' }}>{results.analysis?.return_path}</div>
-                </div>
+
+                <p>{url.explanation}</p>
+
               </div>
-              {results.analysis?.spoofed && (
-                <div className="alert-text" style={{ color: '#f43f5e', marginTop: '12px', fontWeight: 'bold' }}>
-                   ⚠️ CRITICAL: Domain mismatch detected between Sender and Return-Path.
-                </div>
-              )}
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* HISTORY */}
+      <div className="glass-card">
+        <h2>Scan History</h2>
+
+        {history.map((item) => (
+          <div key={item.id} className={`history-card ${item.risk_level}`}>
+
+            <div className="history-header">
+              <span>{item.timestamp}</span>
+              <span className={`badge ${item.risk_level}`}>
+                {item.risk_level}
+              </span>
             </div>
 
-            {/* VECTOR DISTRIBUTION */}
-            <div className="glass-card" style={{ marginTop: '20px' }}>
-              <h3 style={{ marginTop: 0, color: '#e2e8f0', marginBottom: '20px' }}>Vector Risk Distribution</h3>
-              {results.allUrls.map((url, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 0', borderBottom: '1px solid #222', alignItems: 'center' }}>
-                  <div style={{ flex: 1, paddingRight: '20px' }}>
-                    <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontFamily: 'monospace', wordBreak: 'break-all' }}>{url.original_url}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>{url.explanation}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', minWidth: '220px' }}>
-                    <div className="risk-bar-container" style={{ width: '150px', height: '8px', background: '#1a1a1a', borderRadius: '4px', overflow: 'hidden', marginRight: '15px' }}>
-                      <div style={{ width: `${url.risk_percent}%`, height: '100%', background: url.risk_percent > 70 ? '#f43f5e' : url.risk_percent > 30 ? '#f59e0b' : '#39ff14', transition: 'width 1s ease' }} />
-                    </div>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', width: '40px', textAlign: 'right', fontFamily: 'monospace' }}>{url.risk_percent}%</span>
-                  </div>
-                </div>
-              ))}
-              <button className="btn-export" onClick={handleExportPDF} style={{ marginTop: '25px', background: 'transparent', color: '#39ff14', border: '1px solid #39ff14', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'all 0.3s' }}>
-                EXPORT FORENSIC PDF REPORT
-              </button>
+            <p>{item.sender}</p>
+
+            <div className="risk-bar">
+              <div
+                className={`risk-fill ${item.risk_level}`}
+                style={{ width: `${item.risk_percent}%` }}
+              ></div>
             </div>
+
           </div>
-        </div>
-      )}
+        ))}
+      </div>
+
     </div>
   );
 }
+
+export default App;

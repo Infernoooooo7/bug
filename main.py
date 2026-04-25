@@ -1,3 +1,6 @@
+from entropy_analysis import is_high_entropy_domain
+from db import init_db, save_scan, get_recent_scans
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +10,7 @@ import tldextract
 import difflib
 import ipaddress
 
-from url_risk_signal import (
+from url_risk_signals import (
     suspicious_tld,
     many_hyphens,
     is_long_url,
@@ -15,6 +18,8 @@ from url_risk_signal import (
 )
 
 app = FastAPI()
+
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -90,6 +95,23 @@ def is_ip_url(url):
 def home():
     return {"status": "Phishing Forensics API running"}
 
+@app.get("/history")
+def get_history():
+    rows = get_recent_scans()
+    history = []
+
+    for row in rows:
+        history.append({
+            "id": row[0],
+            "timestamp": row[1],
+            "sender": row[2],
+            "return_path": row[3],
+            "risk_level": row[4],
+            "risk_percent": row[5]
+        })
+
+    return {"history": history}
+
 @app.post("/analyze")
 def analyze_email(data: EmailInput):
     urls = detect_urls(data.content)
@@ -118,6 +140,8 @@ def analyze_email(data: EmailInput):
         tld_flag = suspicious_tld(expanded)
         hyphen_flag = many_hyphens(expanded)
 
+        entropy_flag, entropy_value = is_high_entropy_domain(base)
+
         visual_homograph = False
         similarity_score = 0
 
@@ -130,69 +154,33 @@ def analyze_email(data: EmailInput):
 
         risk = 0
 
-        if unicode_homograph:
-            risk += 40
-
-        if visual_homograph:
-            risk += 50
-
-        if shortened:
-            risk += 15
-
-        if suspicious:
-            risk += 45
-
-        if ip_flag:
-            risk += 40
-
-        if subdomain_flag:
-            risk += 20
-
-        if tld_flag:
-            risk += 10
-
-        if hyphen_flag:
-            risk += 10
-
-        if long_flag and risk > 0:
-            risk += 10
-
-        if risk > 0 and external:
-            risk += 5
+        if unicode_homograph: risk += 40
+        if visual_homograph: risk += 50
+        if shortened: risk += 15
+        if suspicious: risk += 45
+        if ip_flag: risk += 40
+        if subdomain_flag: risk += 20
+        if tld_flag: risk += 10
+        if hyphen_flag: risk += 10
+        if entropy_flag: risk += 15
+        if long_flag and risk > 0: risk += 10
+        if risk > 0 and external: risk += 5
 
         risk = min(risk, 100)
 
         reasons = []
 
-        if visual_homograph:
-            reasons.append("domain closely mimics sender domain")
-
-        if unicode_homograph:
-            reasons.append("uses Unicode characters")
-
-        if shortened:
-            reasons.append("shortened URL hides destination")
-
-        if suspicious:
-            reasons.append("multiple phishing-related keywords detected")
-
-        if ip_flag:
-            reasons.append("uses raw IP address instead of domain")
-
-        if subdomain_flag:
-            reasons.append("excessive subdomains detected")
-
-        if tld_flag:
-            reasons.append("uses suspicious top-level domain")
-
-        if hyphen_flag:
-            reasons.append("domain contains many hyphens")
-
-        if long_flag and risk > 0:
-            reasons.append("unusually long URL")
-
-        if external and risk > 20:
-            reasons.append("points to external domain")
+        if visual_homograph: reasons.append("domain closely mimics sender domain")
+        if unicode_homograph: reasons.append("uses Unicode characters")
+        if shortened: reasons.append("shortened URL hides destination")
+        if suspicious: reasons.append("multiple phishing-related keywords detected")
+        if ip_flag: reasons.append("uses raw IP address instead of domain")
+        if subdomain_flag: reasons.append("excessive subdomains detected")
+        if tld_flag: reasons.append("uses suspicious top-level domain")
+        if hyphen_flag: reasons.append("domain contains many hyphens")
+        if entropy_flag: reasons.append(f"domain shows high randomness (entropy={round(entropy_value,2)})")
+        if long_flag and risk > 0: reasons.append("unusually long URL")
+        if external and risk > 20: reasons.append("points to external domain")
 
         explanation = (
             "This URL " + " and ".join(reasons) + "."
@@ -203,12 +191,7 @@ def analyze_email(data: EmailInput):
             "original_url": url,
             "expanded_url": expanded,
             "risk_percent": risk,
-            "visual_homograph": visual_homograph,
-            "similarity_score": round(similarity_score, 2),
-            "unicode_homograph": unicode_homograph,
-            "shortened_url": shortened,
-            "external_link": external,
-            "suspicious_domain": suspicious,
+            "entropy_score": round(entropy_value, 2),
             "explanation": explanation
         }
 
@@ -221,23 +204,18 @@ def analyze_email(data: EmailInput):
 
     avg_risk = int(total_risk / len(urls)) if urls else 0
 
-    email_risk = avg_risk
-    if spoofed:
-        email_risk += 25
-
+    email_risk = avg_risk + (25 if spoofed else 0)
     email_risk = min(email_risk, 100)
 
     risk_level = "low"
-    if email_risk >= 70:
-        risk_level = "high"
-    elif email_risk >= 30:
-        risk_level = "medium"
+    if email_risk >= 70: risk_level = "high"
+    elif email_risk >= 30: risk_level = "medium"
 
     risk_color = "green"
-    if risk_level == "high":
-        risk_color = "red"
-    elif risk_level == "medium":
-        risk_color = "yellow"
+    if risk_level == "high": risk_color = "red"
+    elif risk_level == "medium": risk_color = "yellow"
+
+    save_scan(sender, return_path, risk_level, email_risk)
 
     return {
         "total_urls": len(urls),
