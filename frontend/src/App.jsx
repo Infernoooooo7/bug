@@ -3,7 +3,7 @@ import html2pdf from 'html2pdf.js';
 import './App.css';
 
 export default function App() {
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://10.115.31.83:8000/docs';
+  const ANALYZE_ENDPOINT = 'http://127.0.0.1:8000/analyze';
   const [emailText, setEmailText] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
@@ -15,7 +15,7 @@ export default function App() {
     setResults(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/analyze`, {
+      const response = await fetch(ANALYZE_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: emailText })
@@ -23,19 +23,21 @@ export default function App() {
 
       const data = await response.json();
 
-      // 2. Map Backend Response to your UI Components
+      const riskyUrls = data.risky_urls || [];
+      const safeUrls = data.safe_urls || [];
+
       setResults({
         score: data.email_risk_percent,
         level: data.risk_level,
         color: data.risk_color,
         analysis: data.email_analysis,
-        // Combine safe and risky URLs for the heat-map
-        allUrls: [...data.risky_urls, ...data.safe_urls]
+        riskyUrls,
+        safeUrls,
+        allUrls: [...riskyUrls, ...safeUrls]
       });
 
     } catch (error) {
       console.error("Backend Error:", error);
-      alert("Error: Ensure Person 2's FastAPI server is running on port 8000.");
     } finally {
       setIsScanning(false);
     }
@@ -121,8 +123,9 @@ export default function App() {
             {/* LINK DISTRIBUTION HEAT-MAP */}
             <div className="glass-card" style={{ marginTop: '20px' }}>
               <h3 style={{ color: '#e2e8f0', marginBottom: '20px' }}>Vector Risk Distribution</h3>
+              <h4 style={{ color: '#f43f5e', marginBottom: '10px' }}>Risky URLs</h4>
               <div className="link-card-grid">
-                {results.allUrls.map((item, index) => (
+                {results.riskyUrls.map((item, index) => (
                   <div key={index} className="individual-link-card">
                     <div className="link-info">
                       <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
@@ -145,6 +148,39 @@ export default function App() {
                     </div>
                   </div>
                 ))}
+                {results.riskyUrls.length === 0 && (
+                  <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No risky URLs detected.</div>
+                )}
+              </div>
+
+              <h4 style={{ color: '#39ff14', marginTop: '20px', marginBottom: '10px' }}>Safe URLs</h4>
+              <div className="link-card-grid">
+                {results.safeUrls.map((item, index) => (
+                  <div key={`safe-${index}`} className="individual-link-card">
+                    <div className="link-info">
+                      <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {item.original_url}
+                      </span>
+                      <div style={{ color: item.risk_percent > 0 ? '#f43f5e' : '#39ff14', fontSize: '0.7rem', marginTop: '4px' }}>
+                        {item.explanation}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div className="risk-bar-container">
+                        <div className="risk-bar-fill" style={{
+                          width: `${item.risk_percent}%`,
+                          backgroundColor: item.risk_percent > 70 ? '#f43f5e' : item.risk_percent > 30 ? '#f59e0b' : '#39ff14'
+                        }}></div>
+                      </div>
+                      <span className="percentage-text" style={{ color: item.risk_percent > 30 ? '#f59e0b' : '#39ff14' }}>
+                        {item.risk_percent}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {results.safeUrls.length === 0 && (
+                  <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No safe URLs found.</div>
+                )}
               </div>
             </div>
           </div>

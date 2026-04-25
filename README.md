@@ -6,6 +6,7 @@ This project is a FastAPI backend that analyzes email/message content for phishi
 
 The current logic in `main.py` includes:
 
+- CORS middleware enabled for frontend access (`allow_origins=["*"]`, `allow_credentials=True`, all methods/headers)
 - URL extraction from message text (`https?://[^\s]+`)
 - URL expansion by following redirects (`timeout=5`, `allow_redirects=True`)
 - Base-domain extraction for URL comparisons (`domain.suffix`)
@@ -13,7 +14,7 @@ The current logic in `main.py` includes:
 - Visual homograph detection versus sender domain (similarity threshold `> 0.8`)
 - URL shortener detection
 - External-link detection (sender domain not found in destination base domain)
-- Suspicious keyword detection on base domain (`login`, `verify`, `secure`, `account`, `bank`)
+- Suspicious keyword detection on expanded URL text (`login`, `verify`, `secure`, `account`, `bank`)
 - Weighted per-URL risk scoring with conditional weak-signal boost (0 to 100)
 - Email header parsing (`From:` and `Return-Path:`)
 - Sender spoof detection (`From` domain vs `Return-Path` domain)

@@ -1,0 +1,9 @@
+{
+  "name": "phising_backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "python -m uvicorn main:app --reload",
+    "dev": "python -m uvicorn main:app --reload"
+  }
+}
