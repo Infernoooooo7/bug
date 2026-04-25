@@ -130,8 +130,6 @@ npm run dev
 ## 🤝 Contribution
 Contributions are welcome! Please fork the repository, create a feature branch, and submit a PR. For major changes, please open an issue first to discuss what you would like to change.
 
-## 📜 License
-Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 *Developed for Hackathon 2026 - Building a Safer Web.*
