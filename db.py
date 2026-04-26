@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime
 
 DB_NAME = "file:memdb1?mode=memory&cache=shared"
+_keep_alive = None
 
 
 def init_db():
