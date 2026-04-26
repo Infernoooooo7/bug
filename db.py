@@ -1,11 +1,15 @@
 import sqlite3
 from datetime import datetime
 
-DB_NAME = "scan_history.db"
+DB_NAME = "file:memdb1?mode=memory&cache=shared"
 
 
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
+    # Shared in-memory DB connection to keep the database alive across threads
+    # We use the URI format so that sqlite3.connect() hits the same shared memory space
+    global _keep_alive
+    _keep_alive = sqlite3.connect(DB_NAME, uri=True, check_same_thread=False)
+    conn = _keep_alive
     cursor = conn.cursor()
 
     # Scan history table
@@ -46,7 +50,7 @@ def init_db():
 
 
 def save_scan(sender, return_path, risk_level, risk_percent, payload="", full_analysis="{}"):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     cursor = conn.cursor()
 
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -63,7 +67,7 @@ def save_scan(sender, return_path, risk_level, risk_percent, payload="", full_an
 
 
 def get_recent_scans(limit=10):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -75,7 +79,7 @@ def get_recent_scans(limit=10):
 
 
 def get_all_scans():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -88,7 +92,7 @@ def get_all_scans():
 
 import json
 def get_stats():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     cursor = conn.cursor()
 
     cursor.execute("SELECT COUNT(*) FROM history")
@@ -153,7 +157,7 @@ def get_stats():
 
 
 def delete_scan(log_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     cursor = conn.cursor()
 
     cursor.execute("DELETE FROM history WHERE id = ?", (log_id,))
@@ -163,7 +167,7 @@ def delete_scan(log_id):
 
 
 def update_scan(log_id, risk_level, risk_percent):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -181,7 +185,7 @@ def update_scan(log_id, risk_level, risk_percent):
 # ========================
 
 def get_cached_url(url):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     cursor = conn.cursor()
 
     cursor.execute("SELECT vt_flag FROM url_cache WHERE url = ?", (url,))
@@ -195,7 +199,7 @@ def get_cached_url(url):
 
 
 def save_url_cache(url, vt_flag):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     cursor = conn.cursor()
 
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -219,7 +223,7 @@ def get_reports_list():
     ]
 
 def get_scan_by_id(scan_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, uri=True)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
