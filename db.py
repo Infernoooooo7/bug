@@ -47,7 +47,7 @@ def init_db():
     """)
 
     conn.commit()
-    conn.close()
+    print("Database initialized (In-Memory Shared). Master connection active.")
 
 
 def save_scan(sender, return_path, risk_level, risk_percent, payload="", full_analysis="{}"):
@@ -64,6 +64,7 @@ def save_scan(sender, return_path, risk_level, risk_percent, payload="", full_an
     new_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    print(f"DEBUG: Saved scan {new_id} to DB.")
     return new_id
 
 
@@ -74,8 +75,8 @@ def get_recent_scans(limit=10):
 
     cursor.execute("SELECT * FROM history ORDER BY id DESC LIMIT ?", (limit,))
     rows = cursor.fetchall()
-
     conn.close()
+    print(f"DEBUG: Fetched {len(rows)} scans from DB.")
     return [dict(row) for row in rows]
 
 
