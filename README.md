@@ -79,9 +79,12 @@ npm run dev
 
 ## 🌐 Deployment
 
-The backend is optimized for cloud deployment on platforms like **Render**.
-- **Database**: Uses shared-memory SQLite, making it compatible with ephemeral disk instances.
-- **API Base**: [https://teamcrackers.onrender.com](https://teamcrackers.onrender.com)
+The platform is architected for seamless cloud deployment:
+
+- **Backend (Render)**: Optimized for Render using a shared-memory SQLite configuration, allowing for high performance on ephemeral instances.
+  - API Base: [https://teamcrackers.onrender.com](https://teamcrackers.onrender.com)
+- **Frontend (Vercel)**: The forensic dashboard is deployed on Vercel, ensuring global availability and fast loading times via Edge delivery.
+  - Dashboard URL: [https://phish-forensics.vercel.app](https://phish-forensics.vercel.app) (Update with your actual Vercel URL)
 
 ---
 
