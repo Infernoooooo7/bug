@@ -8,5 +8,6 @@ __pycache__/
 *.db
 DEV_README.md
 detection_core_logic.txt
+threat_api.py
 n o d e _ m o d u l e s /  
  
