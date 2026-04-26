@@ -85,12 +85,6 @@ The backend is optimized for cloud deployment on platforms like **Render**.
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 <div align="center">
   <p>Built for the Hackathon winning demo by <strong>Team Crackers</strong>.</p>
 </div>
