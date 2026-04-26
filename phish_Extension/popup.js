@@ -9,7 +9,8 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
     resultDiv.textContent = "Analyzing...";
     
     try {
-        const API = "http://localhost:8000";
+        const API = "https://teamcrackers.onrender.com";
+        console.log("Sending request to:", `${API}/analyze`);
         const res = await fetch(`${API}/analyze`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -17,6 +18,7 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
         });
         
         const data = await res.json();
+        console.log("Response:", data);
         
         let color = "#10B981"; // Low risk
         if (data.risk_level === "medium") color = "#F59E0B";
