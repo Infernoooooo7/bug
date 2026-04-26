@@ -24,7 +24,7 @@ function App() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const API = "http://localhost:8000";
+  const API = "https://teamcrackers.onrender.com";
 
   const handleLogin = async (e) => {
     e.preventDefault();
