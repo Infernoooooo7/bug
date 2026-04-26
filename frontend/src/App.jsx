@@ -144,7 +144,7 @@ function App() {
                 Phish<span className="highlight">Forensics</span>
               </h1>
             </div>
-            <p className="login-subtitle">System Access Required</p>
+            <p className="login-subtitle">Enter your credentials to continue</p>
             
             <form onSubmit={handleLogin} className="login-form">
               {loginError && <div className="error-message">{loginError}</div>}
@@ -182,10 +182,6 @@ function App() {
                 {loginLoading ? <span className="spinner"></span> : "Authenticate"}
               </button>
             </form>
-            <div className="login-hint">
-              <strong>Admin:</strong> admin / admin123<br/>
-              <strong>Analyst:</strong> user / user123
-            </div>
           </div>
         </div>
       </div>
