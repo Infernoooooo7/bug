@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AdminPanel from "./AdminPanel";
+import { AdminDashboard } from "./AdminDashboard";
+import { DashboardPage, ScanPage, HistoryPage, UsersPage, ThreatIntelPage, SettingsPage } from "./pages";
+import HistoryModal from "./HistoryModal";
 import "./App.css";
 
 function App() {
@@ -7,6 +11,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("phish_auth") === "true"
@@ -19,7 +24,7 @@ function App() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const API = "http://10.115.31.83:8000";
+  const API = "http://localhost:8000";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -187,7 +192,27 @@ function App() {
     );
   }
 
+  if (role === 'admin') {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AdminPanel handleLogout={handleLogout} />}>
+            <Route index element={<Navigate to="/admin" replace />} />
+            <Route path="dashboard" element={<DashboardPage history={history} API={API} fetchHistory={fetchHistory} />} />
+            <Route path="scan" element={<ScanPage API={API} fetchHistory={fetchHistory} />} />
+            <Route path="history" element={<HistoryPage history={history} API={API} fetchHistory={fetchHistory} />} />
+            <Route path="admin" element={<AdminDashboard history={history} API={API} fetchHistory={fetchHistory} />} />
+            <Route path="users" element={<UsersPage API={API} />} />
+            <Route path="threat-intel" element={<ThreatIntelPage history={history} API={API} />} />
+            <Route path="settings" element={<SettingsPage API={API} />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   return (
+    <BrowserRouter>
     <div className="app-wrapper">
       {/* Background ambient effects */}
       <div className="ambient-glow glow-1"></div>
@@ -196,23 +221,21 @@ function App() {
       <div className="container animate-fade-in">
         <header className="header">
           <div className="header-top">
-            <div className="logo-container">
-              <div className="logo-icon">🛡️</div>
-              <h1 className="title">
-                Phish<span className="highlight">Forensics</span>
-              </h1>
-            </div>
             <button onClick={handleLogout} className="logout-btn">
               Logout
             </button>
           </div>
+          
+          <div className="logo-container">
+            <div className="logo-icon">🛡️</div>
+            <h1 className="title">
+              Phish<span className="highlight">Forensics</span>
+            </h1>
+          </div>
           <p className="subtitle">Advanced Threat Intelligence Sandbox</p>
         </header>
 
-        <main className={`main-content ${role === 'admin' ? 'admin-mode' : ''}`}>
-          {role === 'admin' ? (
-            <AdminPanel history={history} API={API} fetchHistory={fetchHistory} />
-          ) : (
+        <main className="main-content">
             <>
             <div className="left-column">
             {/* INPUT SECTION */}
@@ -293,7 +316,11 @@ function App() {
                     <h2>🔗 URL Forensics</h2>
                     <div className="url-list">
                       {result.risky_urls.map((url, i) => (
-                        <div key={i} className="url-block">
+                        <div 
+                          key={i} 
+                          className="url-block staggered-item"
+                          style={{ animationDelay: `${0.2 + (i * 0.1)}s` }}
+                        >
                           <div className="url-header">
                             <span className="url-text">{url.original_url}</span>
                             <span className={`risk-badge ${url.risk_percent > 70 ? 'high' : url.risk_percent > 30 ? 'medium' : 'low'}`}>
@@ -333,8 +360,23 @@ function App() {
                   {history.length === 0 ? (
                     <div className="empty-state">No scan history available.</div>
                   ) : (
-                    history.map((item) => (
-                      <div key={item.id} className={`history-card ${item.risk_level}`}>
+                      history.map((item, index) => {
+                        let displayUrl = "Deep Forensic Scan";
+                        try {
+                          const analysis = typeof item.full_analysis === 'string' ? JSON.parse(item.full_analysis) : item.full_analysis;
+                          if (analysis?.risky_urls?.length > 0) displayUrl = analysis.risky_urls[0].original_url;
+                          else if (analysis?.safe_urls?.length > 0) displayUrl = analysis.safe_urls[0].original_url;
+                        } catch (e) {
+                          console.warn("Analysis parse failed", e);
+                        }
+                      
+                      return (
+                      <div 
+                        key={item.id} 
+                        className={`history-card staggered-item ${item.risk_level}`}
+                        style={{ animationDelay: `${0.1 + (index * 0.05)}s`, cursor: 'pointer' }}
+                        onClick={() => setSelectedHistoryItem(item)}
+                      >
                         <div className="history-card-inner">
                           <div className="history-header">
                             <span className="timestamp">{item.timestamp}</span>
@@ -342,9 +384,21 @@ function App() {
                               {item.risk_level.toUpperCase()}
                             </span>
                           </div>
-                          <p className="sender-info" title={item.sender}>
-                            {item.sender || "Unknown Sender"}
+                          
+                          {item.sender && item.sender.trim() !== "None" && item.sender.trim() !== "" && (
+                            <p className="sender-info" title={item.sender}>
+                              {item.sender}
+                            </p>
+                          )}
+                          
+                          <p className="url-preview" title={displayUrl} style={{ 
+                            margin: (!item.sender || item.sender.trim() === "None" || item.sender.trim() === "") ? "12px 0" : "4px 0 12px", 
+                            fontSize: (!item.sender || item.sender.trim() === "None" || item.sender.trim() === "") ? "15px" : "13px", 
+                            color: "var(--accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "monospace" 
+                          }}>
+                            🔗 {displayUrl}
                           </p>
+                          
                           <div className="risk-bar mini">
                             <div
                               className={`risk-fill ${item.risk_level}`}
@@ -353,16 +407,20 @@ function App() {
                           </div>
                         </div>
                       </div>
-                    ))
+                    )})
                   )}
                 </div>
               </section>
             </div>
             </>
-          )}
         </main>
       </div>
+
+      {selectedHistoryItem && (
+        <HistoryModal data={selectedHistoryItem} onClose={() => setSelectedHistoryItem(null)} />
+      )}
     </div>
+    </BrowserRouter>
   );
 }
 

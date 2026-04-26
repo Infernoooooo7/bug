@@ -9,7 +9,7 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
     resultDiv.textContent = "Analyzing...";
     
     try {
-        const API = "http://10.115.31.83:8000";
+        const API = "http://localhost:8000";
         const res = await fetch(`${API}/analyze`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

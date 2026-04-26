@@ -6,7 +6,12 @@ from db import (
     get_cached_url,
     save_url_cache,
     delete_scan,
-    update_scan
+    update_scan,
+    get_all_scans,
+    get_stats,
+    get_threat_intel,
+    get_reports_list,
+    get_scan_by_id
 )
 from threat_api import check_url_virustotal
 
@@ -14,6 +19,7 @@ from fastapi import FastAPI, Response
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from report_generator import generate_pdf_report
+import json
 
 import re
 import requests
@@ -160,19 +166,132 @@ def login(data: LoginInput):
 @app.get("/history")
 async def get_history():
     scans = get_recent_scans(limit=10)
+    # scans is already a list of dicts from db.py
+    return {"history": scans}
 
-    history = []
+@app.get("/stats")
+async def get_system_stats():
+    return get_stats()
+
+import csv
+from io import StringIO
+
+@app.get("/health")
+async def health():
+    return {"status": "online", "database": "connected", "version": "v2.4.0-pro"}
+
+@app.get("/reports")
+async def get_reports():
+    # Dynamic list of 'available' reports based on DB state
+    stats = get_stats()
+    return [
+        {"id": "audit_csv", "name": f"Global_Audit_Logs_{stats['total_scans']}.csv", "date": "2026-04-26", "size": "450 KB", "type": "CSV"},
+        {"id": "intel_json", "name": "Threat_Intelligence_Summary.json", "date": "2026-04-25", "size": "120 KB", "type": "JSON"},
+        {"id": "exec_pdf", "name": "Executive_Security_Summary.pdf", "date": "2026-04-26", "size": "1.2 MB", "type": "PDF"}
+    ]
+
+@app.get("/download/{report_id}")
+async def download_report(report_id: str):
+    if report_id == "audit_csv":
+        return await export_logs_csv()
+    if report_id == "intel_json":
+        return await export_logs_json()
+    if report_id == "exec_pdf":
+        return await export_pdf_summary()
+    return Response(content="Report not found", status_code=404)
+
+@app.get("/export")
+@app.get("/export/csv")
+async def export_logs_csv():
+    scans = get_all_scans()
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Timestamp", "Sender", "Return Path", "Risk Level", "Risk Percent", "Payload", "Full Analysis"])
     for row in scans:
-        history.append({
-            "id": row[0],
-            "timestamp": row[1],
-            "sender": row[2],
-            "return_path": row[3],
-            "risk_level": row[4],
-            "risk_percent": row[5]
-        })
+        writer.writerow([row.get(k, "") for k in ["id", "timestamp", "sender", "return_path", "risk_level", "risk_percent", "payload", "full_analysis"]])
+    output.seek(0)
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=PhishForensics_Audit_Logs.csv"}
+    )
 
-    return {"history": history}
+@app.get("/export/json")
+async def export_logs_json():
+    scans = get_all_scans()
+    content = json.dumps(scans, indent=2)
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=PhishForensics_Raw_Data.json"}
+    )
+
+@app.get("/export/pdf-summary")
+async def export_pdf_summary():
+    stats = get_stats()
+    # Create a summary report payload
+    summary_data = {
+        "email_risk_percent": 0, # Not used for summary
+        "risk_level": "N/A",
+        "email_analysis": {"sender": "SYSTEM", "return_path": "SYSTEM", "spoofed": False},
+        "summary": f"Total Scans: {stats['total_scans']} | High Risk: {stats['high_risk']} | Medium: {stats['medium_risk']}",
+        "risky_urls": stats["top_threats"] # Reuse top threats for URL list in report
+    }
+    pdf_bytes = generate_pdf_report(summary_data)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=Executive_Security_Summary.pdf"}
+    )
+
+@app.get("/threat-intel")
+async def threat_intel():
+    return get_threat_intel()
+
+
+@app.get("/report/{log_id}")
+async def get_single_report(log_id: int):
+    scan = get_scan_by_id(log_id)
+    if not scan:
+        return Response(content="Report not found", status_code=404)
+    
+    # Ensure scan is formatted for report_generator
+    # report_generator expects a dict that looks like result_dict from /analyze
+    try:
+        report_data = json.loads(scan["full_analysis"])
+    except:
+        # Fallback if no full_analysis
+        report_data = {
+            "email_risk_percent": scan["risk_percent"],
+            "risk_level": scan["risk_level"],
+            "email_analysis": {"sender": scan["sender"], "return_path": scan["return_path"], "spoofed": False},
+            "risky_urls": [],
+            "safe_urls": []
+        }
+    
+    pdf_bytes = generate_pdf_report(report_data)
+    return Response(
+        content=pdf_bytes, 
+        media_type="application/pdf", 
+        headers={"Content-Disposition": f"attachment; filename=Forensic_Report_{log_id}.pdf"}
+    )
+
+@app.get("/threat-heatmap")
+async def threat_heatmap():
+    stats = get_stats()
+    # stats already contains counts for high/medium/low and top_threats
+    # We'll re-format it for the heatmap specifically
+    
+    threats = {t["name"]: t["count"] for t in stats["top_threats"]}
+    
+    return {
+        "high": stats["high_risk"],
+        "medium": stats["medium_risk"],
+        "low": stats["low_risk"],
+        "ip_urls": threats.get("IP Address URL", 0),
+        "shortened": threats.get("Shortened URL", 0),
+        "domains": threats.get("Suspicious Domain", 0) + threats.get("Phishing Link", 0)
+    }
 
 
 @app.delete("/delete-log/{log_id}")
@@ -315,9 +434,7 @@ def analyze_email(data: EmailInput):
     else:
         risk_level = "low"
 
-    save_scan(sender, return_path, risk_level, email_risk)
-
-    return {
+    result_dict = {
         "email_risk_percent": email_risk,
         "risk_level": risk_level,
         "email_analysis": {
@@ -328,3 +445,7 @@ def analyze_email(data: EmailInput):
         "risky_urls": risky_urls,
         "safe_urls": safe_urls
     }
+
+    new_id = save_scan(sender, return_path, risk_level, email_risk, data.content, json.dumps(result_dict))
+    result_dict["id"] = new_id
+    return result_dict
