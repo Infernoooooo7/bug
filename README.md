@@ -1,122 +1,96 @@
-# 🛡️ PhishForensics Sandbox
-### *Advanced Phishing Intelligence & Forensic Analysis Engine*
+# 🛡️ PhishForensics: Advanced Security Intelligence Sandbox
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/Build-Passing-success.svg)]()
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)]()
+[![React 18](https://img.shields.io/badge/React-18-cyan.svg)]()
+
+**PhishForensics** is a high-performance, full-stack cybersecurity platform designed for deep analysis of suspicious payloads, phishing attempts, and fraudulent identities. Built with a futuristic "Cyber-Sandbox" aesthetic, it combines heuristic engines, entropy analysis, and real-time threat intelligence to protect organizations from modern social engineering attacks.
 
 ---
 
-## 📌 Problem Statement
-Phishing remains the #1 entry point for cyberattacks, responsible for over 90% of data breaches. Modern attackers have evolved beyond simple typos, using **homograph attacks (look-alike characters)**, **URL shorteners**, and **dynamic redirects** to bypass traditional filters. Security teams and end-users need a sandboxed environment to deconstruct these threats without risking infection or data exposure.
+## ✨ Key Features
 
-## 💡 Solution Overview
-**PhishForensics Sandbox** is a high-fidelity analysis platform designed to strip away the deception of phishing attempts. By combining heuristic analysis, cryptographic entropy checks, and real-time threat intelligence, the system provides a comprehensive "Security Blueprint" of any suspicious link or email content. It doesn't just say if a link is bad—it explains *why*, providing actionable forensic evidence.
+### 🔍 Deep Forensic Sandbox
+- **Multi-Layer Analysis**: Inspect raw email headers, body content, and suspicious URLs.
+- **Heuristic Engine**: Detects visual homograph attacks, DGA (Domain Generation Algorithms), and hidden redirects.
+- **Threat Heatmap**: Real-time visualization of attack vectors and threat concentrations.
 
-## 🧠 Key Features
-*   **🔍 Multi-Stage URL Analysis**: Deep-dive inspection of URLs, including expansion of shortened links (Bitly, TinyURL) to reveal final destinations.
-*   **⚖️ Intelligent Risk Scoring**: A proprietary weighted scoring engine that evaluates heuristics, domain age, and structural anomalies.
-*   **🎭 Deception Detection**: Specialized algorithms to catch **Homograph (Punycode) attacks**, suspicious TLDs, and IP-based URLs.
-*   **🌐 Threat Intelligence Integration**: Real-time reputation lookups via the **VirusTotal API**.
-*   **📉 Entropy-Based Logic**: Detects procedurally generated or obfuscated URLs using Shannon Entropy calculations.
-*   **📄 Forensic PDF Reporting**: One-click generation of professional PDF reports for incident documentation.
-*   **📊 Interactive Dashboard**: A sleek, React-based interface with real-time risk visualizations and scan history tracking.
+### 📄 Forensic Reporting
+- **PDF Generation**: One-click generation of professional forensic reports including risk scores, metadata, and detailed URL breakdowns.
+- **Intelligence Archives**: Comprehensive historical database of all security events with deep-inspection capabilities.
 
-## 🏗️ Architecture Overview
-The project follows a modern, decoupled architecture:
-1.  **Frontend (React)**: A highly responsive SPA that handles user input, communicates with the backend via REST APIs, and renders forensic data visualizations.
-2.  **Backend (FastAPI)**: An asynchronous Python microservice that orchestrates the analysis engine, manages external API calls, and performs heavy computation.
-3.  **Data Layer (SQLite)**: A lightweight, persistent database for logging scan history and trend analysis.
-4.  **Forensic Layer**: Modular Python scripts for specific checks (Entropy, Heuristics, Threat Intel).
+### 👥 Admin & Intelligence Center
+- **Security Dashboard**: Unified overview of global risk profiles, engine integrity, and active threat hits.
+- **User Management**: Identity and access management for authorized security analysts.
+- **Real-Time Reactivity**: Data-driven UI that updates instantly across all modules without page refreshes.
 
-## ⚙️ Tech Stack
-*   **Frontend**: React.js, Vite, CSS3 (Modern Glassmorphism)
-*   **Backend**: Python 3.x, FastAPI, Uvicorn
-*   **Database**: SQLite
-*   **APIs**: VirusTotal v3
-*   **Libraries**: Pydantic, Requests, ReportLab (PDF Generation), Math (Entropy)
+### 🌐 Chrome Extension
+- **On-the-Fly Analysis**: Instant analysis of webpage content or manual input directly from the browser.
+- **Cloud-Connected**: Seamlessly communicates with the deployed forensic backend for real-time protection.
 
-## 🔍 How It Works
-1.  **Ingestion**: The user pastes a suspicious URL or raw email content into the dashboard.
-2.  **Normalization**: The engine cleans the input and follows all redirects to identify the "True Destination."
-3.  **Heuristic Scan**: The URL is parsed for red flags:
-    *   *Is it an IP address?*
-    *   *Does it contain sensitive keywords (login, bank, verify)?*
-    *   *Is the entropy suspiciously high?*
-4.  **Intel Lookup**: The engine queries global threat databases for historical malicious activity.
-5.  **Score Compilation**: All signals are aggregated into a 0-100 Risk Score.
-6.  **Reporting**: Results are displayed visually and stored for future forensic reference.
+---
 
-## 🧪 Sample Use Case
-**Scenario**: An employee receives an email from `support@microsоft.com`. 
-*   **Attack**: The "o" in microsoft is actually a Cyrillic character (U+043E).
-*   **PhishForensics Detection**: The engine identifies the Punycode mismatch (`xn--microsft-pbg.com`), calculates a high risk score for "Homograph Deception," and flags it as a CRITICAL threat before the user clicks.
+## 🛠️ Technology Stack
 
-## 📊 Output Explanation
-*   **0-30 (Low Risk)**: Likely safe, but exercise standard caution.
-*   **31-70 (Suspicious)**: Contains multiple red flags; do not enter credentials.
-*   **71-100 (Critical)**: Confirmed malicious or highly deceptive; immediate block recommended.
+- **Frontend**: React 18, Glassmorphism UI, Custom CSS-based Heatmaps, Framer Motion animations.
+- **Backend**: FastAPI (Python), Pydantic, CORSMiddleware.
+- **Database**: SQLite (In-Memory with Shared Cache for High Performance).
+- **Security Logic**: TLD Reputation, Entropy Analysis, Homograph Detection, VirusTotal API Integration.
+- **Reporting**: ReportLab (High-fidelity PDF generation).
 
-## 🔐 Security Considerations
-*   **Sandboxed Environment**: The analysis is performed server-side to protect the client's browser.
-*   **API Key Management**: Sensitive credentials (VirusTotal) are managed via `.env` files and never exposed to the frontend.
-*   **Safe Handling**: The system defangs links in reports to prevent accidental clicks.
+---
 
-## 🛠️ Installation & Setup
+## 🚀 Getting Started
 
-### Prerequisites
-*   Python 3.8+
-*   Node.js 16+
-*   VirusTotal API Key
+### 1. Prerequisites
+- Python 3.10 or higher
+- Node.js & npm
 
-### 1. Backend Setup
+### 2. Backend Setup
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/PhishForensics-Sandbox.git
-cd PhishForensics-Sandbox
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/scripts/activate  # Windows: venv\Scripts\activate
+git clone https://github.com/Infernoooooo7/teamCrackers.git
+cd teamCrackers
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure Environment
-echo "VT_API_KEY=your_actual_key_here" > .env
+# Create .env file
+echo "VT_API_KEY=your_virustotal_key_here" > .env
+
+# Start the forensic server
+python -m uvicorn main:app --reload
 ```
 
-### 2. Frontend Setup
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install
-```
-
-## ▶️ How to Run
-
-### Start Backend
-```bash
-# From the root directory
-uvicorn main:app --reload
-```
-
-### Start Frontend
-```bash
-# From the frontend directory
 npm run dev
 ```
 
-## 📁 Project Structure
-```text
-.
-├── main.py                 # FastAPI Entry Point
-├── db.py                   # SQLite Database Configuration
-├── entropy_analysis.py     # URL Randomness Logic
-├── url_risk_signals.py     # Heuristic Rule Engine
-├── threat_api.py           # VirusTotal Integration
-├── scan_history.db         # Local Database (ignored by git)
-├── requirements.txt        # Backend Dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx         # Main React Logic
-│   │   ├── utils/          # PDF Generation & Helpers
-│   │   └── index.css       # Premium UI Styling
-│   └── package.json        # Frontend Dependencies
-└── .env                    # Sensitive Configurations
+### 4. Extension Setup
+1. Open Chrome and navigate to `chrome://extensions/`.
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select the `phish_Extension` folder.
+
 ---
+
+## 🌐 Deployment
+
+The backend is optimized for cloud deployment on platforms like **Render**.
+- **Database**: Uses shared-memory SQLite, making it compatible with ephemeral disk instances.
+- **API Base**: [https://teamcrackers.onrender.com](https://teamcrackers.onrender.com)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <p>Built for the Hackathon winning demo by <strong>Team Crackers</strong>.</p>
+</div>
