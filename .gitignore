@@ -6,5 +6,7 @@ __pycache__/
 .Python
 .env
 *.db
+DEV_README.md
+detection_core_logic.txt
 n o d e _ m o d u l e s /  
  
