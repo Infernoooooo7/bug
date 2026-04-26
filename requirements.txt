@@ -4,8 +4,4 @@ pydantic
 requests
 tldextract
 python-dotenv
-math
-re
-sqlite3
-ipaddress
-difflib
+reportlab
