@@ -6,5 +6,11 @@
     "action": {
         "default_popup": "popup.html"
     },
-    "permissions": []
-}
+    "permissions": [
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://teamcrackers.onrender.com/*"
+    ]
+}
